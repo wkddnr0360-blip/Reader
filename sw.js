@@ -1,10 +1,10 @@
 const CACHE_NAME = 'pacemaker-v2';
 // 깃허브 페이지 경로에 맞춰 캐싱할 파일 목록 지정
 const urlsToCache = [
-    '/Pacemaker24/',
-    '/Pacemaker24/index.html',
-    '/Pacemaker24/manifest.json',
-    '/Pacemaker24/icon-512.png'
+    '/Reader/',
+    '/Reader/index.html',
+    '/Reader/manifest.json',
+    '/Reader/icon-512.png'
 ];
 
 // 1. 설치할 때 파일들을 캐시에 저장
