@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader (Millie Clone)</title>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <!-- 아이폰에서 앱 아이콘이 예쁘게 보이게 하려면 아래 줄 필수 -->
+    <link rel="apple-touch-icon" href="icon-512.png">
     <style>
         /* --- 테마 및 기본 리셋 --- */
         :root { 
@@ -256,6 +260,15 @@
 </div>
 
 <script>
+    // 서비스 워커(앱 설치 기능) 등록
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/Reader/sw.js')
+            .then(registration => console.log('앱 설치 기능(SW) 활성화 성공!'))
+            .catch(err => console.log('SW 등록 실패:', err));
+    });
+}
+    
     // --- [저장소 업그레이드] IndexedDB 설정 (수천 개 대용량 소설 저장 지원) ---
     const DB_NAME = 'PacemakerDB';
     const STORE_NAME = 'books';
