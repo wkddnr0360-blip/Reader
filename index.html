@@ -798,4 +798,59 @@
             // 글자 크기 변경 시 위치 재동기화
             if (isTtsSpeaking && currentSpeakingIndex >= 0) {
                 const p = paragraphsToSpeak[currentSpeakingIndex];
-                let text
+                let textNode = null;
+                for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim().length > 0) { textNode = p.childNodes[i]; break; } }
+                
+                if (textNode) {
+                    try {
+                        const range = document.createRange();
+                        const start = Math.min(lastCharIndex, textNode.length - 1);
+                        range.setStart(textNode, start); range.setEnd(textNode, Math.min(start + 1, textNode.length));
+                        const rects = range.getClientRects();
+                        if (rects && rects.length > 0) {
+                            const absoluteLeft = els.viewer.scrollLeft + (rects[0].left - els.viewer.getBoundingClientRect().left);
+                            currentPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
+                        } else currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
+                    } catch(e) { currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth); }
+                } else currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
+                
+                ttsCurrentPage = currentPage;
+            } else {
+                // 비독서 중일 땐 비율에 맞게 복원
+                currentPage = Math.round((oldCurrentPage / (oldTotalPages - 1 || 1)) * (totalPages - 1 || 1));
+            }
+            
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= totalPages) currentPage = totalPages - 1;
+            
+            els.viewer.style.scrollBehavior = 'auto'; 
+            els.viewer.scrollLeft = currentPage * els.viewer.clientWidth;
+            els.viewer.style.scrollBehavior = 'smooth'; 
+            updateProgressUI(); saveProgress();
+        }, 150);
+    }
+
+    function setTheme(theme, btnEl, isInit = false) {
+        document.body.className = `theme-${theme}`; 
+        document.querySelectorAll('.color-circle').forEach(el => {
+            el.classList.remove('active');
+            if(el.dataset.theme === theme) el.classList.add('active');
+        });
+        
+        if (!isInit) {
+            savedSettings.theme = theme;
+            localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings));
+        }
+    }
+
+    window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
+
+    // PWA 서비스 워커 등록 
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err));
+        });
+    }
+</script>
+</body>
+</html>
