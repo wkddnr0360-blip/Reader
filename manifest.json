@@ -1,0 +1,16 @@
+{
+  "name": "24H 페이스메이커",
+  "short_name": "페이스메이커",
+  "start_url": "/Pacemaker24/",
+  "scope": "/Pacemaker24/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#1e293b",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
