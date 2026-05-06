@@ -1,8 +1,8 @@
 {
   "name": "Pace Reader",
   "short_name": "페이스 리더",
-  "start_url": "/PaceReader/",
-  "scope": "/PaceReader/",
+  "start_url": "/Reader/",
+  "scope": "/Reader/",
   "display": "standalone",
   "background_color": "#1e293b",
   "theme_color": "#1e293b",
