@@ -1,8 +1,8 @@
 {
   "name": "Pacemaker Reader",
   "short_name": "Reader",
-  "start_url": "/Reader/",
-  "scope": "/Reader/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
@@ -10,7 +10,8 @@
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
