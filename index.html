@@ -73,7 +73,6 @@
         .add-fab:active { transform: translateX(200px) scale(0.95); }
         @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } .add-fab:active { transform: scale(0.95); } }
 
-        /* 서재 메뉴 (꾹 누르기) */
         #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
         #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -110,7 +109,6 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
-        /* 독서 문단 팝업 메뉴 */
         #context-popup {
             position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; 
             border-radius: 16px; display: none; z-index: 150; 
@@ -314,6 +312,8 @@
     let ttsCurrentPage = 0; 
     let ttsUtterance = null, selectedVoice = null;
     let paragraphsToSpeak =[], currentSpeakingIndex = -1;
+    let lastCharIndex = 0; // 단어 추적 및 위치 동기화용 핵심 변수
+
     let longPressTimer = null, targetParagraph = null, selectedShelfBookId = null;
     const defaultColors =['#6e8efb', '#f6d365', '#84fab0', '#ff0844', '#4facfe', '#9b59b6'];
 
@@ -463,7 +463,7 @@
         URL.revokeObjectURL(url);
     }
 
-    //[전체 소설] 백업
+    // [전체 소설] 백업
     async function exportAllData() {
         try {
             const allBooks = await loadAllBooks();
@@ -473,18 +473,18 @@
         } catch (e) { alert("전체 백업 중 오류가 발생했습니다."); }
     }
 
-    // [개별 소설] 백업 (1권만)
+    //[개별 소설] 백업
     async function exportSingleBook() {
         try {
             const book = myBooks.find(b => b.id === selectedShelfBookId);
             closeShelfMenu();
             if (!book) return;
-            const safeTitle = book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_'); // 파일명 특수문자 제거
+            const safeTitle = book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_'); 
             triggerDownload([book], `pacemaker_book_${safeTitle}.json`);
         } catch (e) { alert("개별 백업 중 오류가 발생했습니다."); }
     }
 
-    //[마법의 통합 복원] 1권이든 전체든 알아서 합쳐줍니다
+    // [통합 복원] (1권/전체 자동 인식)
     async function importData(event) {
         const file = event.target.files[0];
         if(!file) return;
@@ -492,7 +492,6 @@
         reader.onload = async (e) => {
             try {
                 let importedData = JSON.parse(e.target.result);
-                // 혹시 배열이 아닌 단일 객체라면 배열로 감싸주기
                 if(!Array.isArray(importedData)) importedData = [importedData];
                 
                 let count = 0;
@@ -529,7 +528,6 @@
             else if (!t.startsWith('/*')) {
                 prevEmpty = false;
                 const p = document.createElement('p'); p.textContent = t; p.dataset.idx = idx;
-                // 따옴표로 시작하는 대화체는 들여쓰기 무시
                 if(/^[“‘"'\u300C\u300E]/.test(t)) p.classList.add('dialogue');
                 if(book.highlights.includes(idx)) p.classList.add('highlight');
                 els.content.appendChild(p);
@@ -614,7 +612,6 @@
         }
     }
 
-    // UI 간 터치 충돌 방지
     document.getElementById('main-header').addEventListener('touchstart', e => e.stopPropagation());
     document.getElementById('reader-nav-pill').addEventListener('touchstart', e => e.stopPropagation());
 
@@ -627,7 +624,13 @@
         els.ctxPopup.style.left = finalX + 'px'; els.ctxPopup.style.top = Math.max(10, y - 60) + 'px'; 
     }
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
-    function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
+    
+    function startTtsFromTarget() { 
+        hideContextMenu(); 
+        currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); 
+        startTtsAtParagraph(targetParagraph); 
+    }
+    
     async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
@@ -637,7 +640,7 @@
     }
     function copyTargetText() { if(targetParagraph) navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); hideContextMenu(); }
 
-    // --- TTS 설정 ---
+    // --- [결정적 최적화] TTS 동기화 및 단어 단위 추적 ---
     function initVoices() {
         const voices = speechSynthesis.getVoices();
         const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
@@ -691,7 +694,7 @@
     }
 
     function stopTts() { 
-        speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false;
+        speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false; lastCharIndex = 0;
         paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); 
         els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
     }
@@ -712,6 +715,7 @@
     function speakNext(isReplay = false) {
         if (!isTtsSpeaking) return;
         if (!isReplay && currentSpeakingIndex >= paragraphsToSpeak.length) return stopTts();
+        if (!isReplay) lastCharIndex = 0;
         
         const p = paragraphsToSpeak[currentSpeakingIndex];
         paragraphsToSpeak.forEach(x => x.classList.remove('speaking')); p.classList.add('speaking');
@@ -730,21 +734,39 @@
         if (selectedVoice) ttsUtterance.voice = selectedVoice;
         ttsUtterance.rate = speedOptions[currentSpeedIndex];
         
+        // [핵심] 단어 단위 초정밀 실시간 페이지 추적
         ttsUtterance.onboundary = (e) => {
-            if (e.name !== 'word' && e.name !== 'sentence') return;
+            if (e.charIndex === undefined) return;
+            lastCharIndex = e.charIndex;
+
             let textNode = null;
-            for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE) { textNode = p.childNodes[i]; break; } }
+            for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim().length > 0) { textNode = p.childNodes[i]; break; } }
             if (!textNode) return;
+
             try {
                 const range = document.createRange();
                 const start = Math.min(e.charIndex, textNode.length - 1);
-                const end = Math.min(e.charIndex + Math.max(e.charLength || 1, 1), textNode.length);
+                
+                let len = e.charLength || 1;
+                if (!e.charLength) {
+                    const remaining = textNode.textContent.substring(start);
+                    const spaceIdx = remaining.indexOf(' ');
+                    len = spaceIdx > -1 ? spaceIdx : 1;
+                }
+                const end = Math.min(start + Math.max(len, 1), textNode.length);
                 if (start >= end) return;
+                
                 range.setStart(textNode, start); range.setEnd(textNode, end);
-                const rect = range.getBoundingClientRect();
+                
+                const rects = range.getClientRects();
+                if (!rects || rects.length === 0) return;
+                const rect = rects[0];
+                
                 const absoluteLeft = els.viewer.scrollLeft + (rect.left - els.viewer.getBoundingClientRect().left);
                 const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
+
                 if (wordPage >= 0 && wordPage < totalPages) {
+                    // 유저가 다른 페이지 구경 중이 아니라면, 단어가 페이지를 넘을 때 화면도 같이 넘김
                     if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) {
                         currentPage = wordPage;
                         els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI();
@@ -753,6 +775,7 @@
                 }
             } catch(err) {}
         };
+
         ttsUtterance.onend = () => { if(isManualRestart) isManualRestart = false; else { currentSpeakingIndex++; speakNext(); } };
         ttsUtterance.onerror = () => { if(isManualRestart) isManualRestart = false; else stopTts(); };
         speechSynthesis.speak(ttsUtterance);
@@ -760,6 +783,9 @@
 
     // --- 환경 설정 영구 저장 로직 ---
     function changeFontSize(delta) {
+        const oldTotalPages = totalPages;
+        const oldCurrentPage = currentPage;
+        
         fontSize = Math.max(12, Math.min(30, fontSize + delta));
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
         
@@ -768,36 +794,8 @@
 
         setTimeout(() => {
             calculatePages();
-            let targetP = null;
-            paragraphsToSpeak.forEach(p => { if(targetP) return; if(Math.floor(p.offsetLeft / els.viewer.clientWidth) === currentPage) targetP = p; });
-            els.viewer.style.scrollBehavior = 'auto'; 
-            if(targetP) { const newPage = Math.floor(targetP.offsetLeft / els.viewer.clientWidth); els.viewer.scrollLeft = newPage * els.viewer.clientWidth; currentPage = newPage; } 
-            else els.viewer.scrollLeft = currentPage * els.viewer.clientWidth;
-            els.viewer.style.scrollBehavior = 'smooth'; 
-            updateProgressUI(); saveProgress();
-        }, 150);
-    }
-
-    function setTheme(theme, btnEl, isInit = false) {
-        document.body.className = `theme-${theme}`; 
-        document.querySelectorAll('.color-circle').forEach(el => {
-            el.classList.remove('active');
-            if(el.dataset.theme === theme) el.classList.add('active');
-        });
-        
-        if (!isInit) {
-            savedSettings.theme = theme;
-            localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings));
-        }
-    }
-
-    window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err));
-        });
-    }
-</script>
-</body>
-</html>
+            
+            // 글자 크기 변경 시 위치 재동기화
+            if (isTtsSpeaking && currentSpeakingIndex >= 0) {
+                const p = paragraphsToSpeak[currentSpeakingIndex];
+                let text
