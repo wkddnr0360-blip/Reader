@@ -1,14 +1,14 @@
 {
   "name": "Pace Reader",
-  "short_name": "페이스 리더",
+  "short_name": "Reader",
   "start_url": "/Reader/",
   "scope": "/Reader/",
   "display": "standalone",
-  "background_color": "#1e293b",
-  "theme_color": "#1e293b",
-  "icons": [
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons":[
     {
-      "src": "icon.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
