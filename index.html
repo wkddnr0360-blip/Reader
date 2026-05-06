@@ -25,6 +25,15 @@
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
+        /* [핵심 추가] 모든 UI 요소의 텍스트 선택 및 시스템 팝업(물방울 블록) 원천 차단 */
+        header, #tts-header-controls, #shelf-menu, #context-popup, #reader-nav-pill, #settings-sheet, .add-fab {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none; /* 삼성/사파리 꾹 누르기 기본 팝업 차단 */
+        }
+
         /* --- 상단 헤더 --- */
         header { 
             width: 100%; height: 56px; border-bottom: 1px solid var(--ui-border); 
@@ -73,7 +82,7 @@
         .add-fab:active { transform: translateX(200px) scale(0.95); }
         @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } .add-fab:active { transform: scale(0.95); } }
 
-        /* 서재 꾹 누르기 메뉴 */
+        /* 서재 메뉴 (꾹 누르기) */
         #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
         #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -104,7 +113,7 @@
             margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; 
             padding: 4px 8px; border-radius: 12px; 
             
-            /* [핵심 수정] 브라우저 기본 텍스트 선택 및 팝업 완벽 차단 */
+            /* 본문도 시스템 팝업(단어 사전 등) 뜨지 않게 방어 */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -117,6 +126,7 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
+        /* 독서 문단 팝업 메뉴 */
         #context-popup {
             position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; 
             border-radius: 16px; display: none; z-index: 150; 
@@ -178,7 +188,6 @@
     </style>
 </head>
 <body class="theme-white">
-    <!-- 백그라운드 오디오 유지 트릭 -->
     <audio id="silentAudio" loop src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" preload="auto"></audio>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="cover-upload" accept="image/*" style="display:none;">
@@ -203,6 +212,7 @@
             </button>
         </div>
         
+        <!-- 홈 화면 우측 상단 바로가기 메뉴 (백업 불러오기) -->
         <div class="header-right" id="header-actions">
             <button class="header-btn" onclick="document.getElementById('import-file').click()" title="백업 파일 불러오기" style="font-size:20px; justify-content:flex-end;">📂</button>
         </div>
@@ -214,7 +224,8 @@
     </div>
 
     <!-- 개별 소설 메뉴 (꾹 누르기) -->
-    <div id="shelf-menu-overlay" onclick="closeShelfMenu()">
+    <!-- [수정] 팝업에서도 기본 우클릭/꾹누르기 완벽 방어 -->
+    <div id="shelf-menu-overlay" onclick="closeShelfMenu()" oncontextmenu="return false;">
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 내용/제목 수정</div>
             <div class="menu-item" onclick="triggerLocalCover()">🖼️ 내 앨범에서 표지 선택</div>
@@ -231,7 +242,8 @@
     </div>
 
     <div id="view-reader">
-        <div id="context-popup">
+        <!-- [수정] 독서 문단 팝업 (우클릭/기본 팝업 차단) -->
+        <div id="context-popup" oncontextmenu="return false;">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 여기서부터 재생</div>
             <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
             <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
@@ -250,7 +262,7 @@
     </div>
 
     <!-- 바텀 시트 (설정 및 전체 백업) -->
-    <div id="sheet-overlay" onclick="closeSettings()"></div>
+    <div id="sheet-overlay" onclick="closeSettings()" oncontextmenu="return false;"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
         <div class="color-palette">
@@ -559,13 +571,11 @@
     function updateProgressUI() { els.pageNum.textContent = `${currentPage + 1} / ${totalPages}`; els.progress.style.width = `${(currentPage / (totalPages - 1 || 1)) * 100}%`; }
     async function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; await saveBookToDB(myBooks[i]); } }
 
-    // --- 스크롤 및 터치 이벤트 제어 (기본 팝업 방지용 JS 처리) ---
+    // --- 스크롤 및 터치 제어 (기본 팝업 차단) ---
     let touchStartX = 0, touchStartY = 0, isLongPress = false, isViewerSwiping = false;
 
-    // 브라우저 기본 우클릭/꾹누르기 메뉴 차단 (복사/붙여넣기 시스템 팝업 띄움 방지)
-    els.viewer.addEventListener('contextmenu', e => {
-        e.preventDefault();
-    });
+    // 브라우저 우클릭 방어
+    els.viewer.addEventListener('contextmenu', e => { e.preventDefault(); });
 
     els.viewer.addEventListener('touchstart', e => {
         const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; 
@@ -638,6 +648,7 @@
     }
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
+    
     async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
