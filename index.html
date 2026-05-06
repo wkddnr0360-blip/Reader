@@ -28,7 +28,7 @@
         header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
         .header-right { width: 40px; }
 
-        /* --- [개편] 헤더 통합 TTS 컨트롤러 --- */
+        /* --- 헤더 통합 TTS 컨트롤러 --- */
         #tts-header-controls { 
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             display: flex; align-items: center; gap: 6px; 
@@ -81,9 +81,7 @@
         /* --- 독서 화면 (내용) --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
         
-        #viewer-container { 
-            flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex;
-        }
+        #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; }
 
         #book-content { 
             height: 100%; padding: 30px 20px; box-sizing: border-box;
@@ -175,7 +173,6 @@
     </style>
 </head>
 <body class="theme-white">
-    <!-- 백그라운드 오디오 유지 트릭 -->
     <audio id="silentAudio" loop src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" preload="auto"></audio>
     <input type="file" id="cover-upload" accept="image/*" style="display:none;">
 
@@ -187,22 +184,16 @@
         
         <h1 id="top-title">서재</h1>
         
-        <!-- 헤더 통합 TTS 플레이어 -->
         <div id="tts-header-controls">
-            <!-- 배속 변경 -->
             <button class="tts-ctrl-btn tts-speed-btn" onclick="toggleTtsSpeed()" id="tts-speed-btn">1.0x</button>
-            <!-- 읽는 위치로 화면 복귀 동기화 버튼 -->
             <button class="tts-ctrl-btn" onclick="syncTtsPage()" title="현재 읽는 위치로 이동">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
             </button>
-            <!-- 재생/일시정지 -->
             <button class="tts-ctrl-btn" onclick="pauseResumeTts()" id="tts-pause-btn"></button>
-            <!-- 정지 -->
             <button class="tts-ctrl-btn" onclick="stopTts()">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
             </button>
         </div>
-
         <div class="header-right"></div>
     </header>
 
@@ -211,9 +202,10 @@
         <button class="add-fab" onclick="showInputScreen()">+</button>
     </div>
 
-    <!-- 메뉴 (로컬 앨범만 유지) -->
+    <!-- 메뉴 (수정하기 추가) -->
     <div id="shelf-menu-overlay" onclick="closeShelfMenu()">
         <div id="shelf-menu" onclick="event.stopPropagation()">
+            <div class="menu-item" onclick="editSelectedBook()">📝 이 책 텍스트/제목 수정</div>
             <div class="menu-item" onclick="triggerLocalCover()">🖼️ 내 앨범에서 표지 선택</div>
             <div class="menu-item" onclick="resetCover()">🗑️ 표지 초기화</div>
             <div class="menu-item danger" onclick="deleteSelectedBook()">❌ 이 책 삭제</div>
@@ -222,8 +214,8 @@
 
     <div id="view-input">
         <input type="text" id="book-title" placeholder="소설 제목">
-        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요."></textarea>
-        <button class="start-btn" onclick="saveAndRead()">저장하고 읽기</button>
+        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수천 편의 소설도 저장 가능합니다)"></textarea>
+        <button class="start-btn" id="btn-save-read" onclick="saveAndRead()">저장하고 읽기</button>
     </div>
 
     <div id="view-reader">
@@ -232,29 +224,15 @@
             <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
             <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
         </div>
+        <div id="viewer-container"><div id="book-content"></div></div>
         
-        <div id="viewer-container">
-            <div id="book-content"></div>
-        </div>
-        
-        <!-- 하단 네비게이션 알약 -->
         <footer id="reader-nav-pill">
             <div class="nav-progress-bg"><div id="nav-progress-fill"></div></div>
-            
-            <button class="icon-btn" onclick="showBookshelf()">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-            </button>
-            
-            <!-- 페이지 점프 기능 -->
+            <button class="icon-btn" onclick="showBookshelf()"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></button>
             <div class="page-count" id="pageNumber" onclick="promptPageJump()">1 / 1</div>
-            
             <div style="display:flex; gap:16px;">
-                <button class="icon-btn" onclick="startTts()">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                </button>
-                <button class="icon-btn" onclick="openSettings()">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                </button>
+                <button class="icon-btn" onclick="startTts()"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></button>
+                <button class="icon-btn" onclick="openSettings()"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></button>
             </div>
         </footer>
     </div>
@@ -278,28 +256,52 @@
 </div>
 
 <script>
-    let myBooks = JSON.parse(localStorage.getItem('myBooks')) ||[];
+    // --- [저장소 업그레이드] IndexedDB 설정 (수천 개 대용량 소설 저장 지원) ---
+    const DB_NAME = 'PacemakerDB';
+    const STORE_NAME = 'books';
+    let db;
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = e => {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            };
+            req.onsuccess = e => { db = e.target.result; resolve(); };
+            req.onerror = e => reject(e);
+        });
+    }
+    async function saveBookToDB(book) {
+        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(book); tx.oncomplete = resolve; });
+    }
+    async function deleteBookFromDB(id) {
+        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(id); tx.oncomplete = resolve; });
+    }
+    async function loadAllBooks() {
+        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result || []); });
+    }
+
+    let myBooks =[];
     let currentBookId = null, totalPages = 1, currentPage = 0, fontSize = 18;
+    let editingBookId = null; // 수정 모드 추적용 변수
     
     const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
-    
     const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0];
     let currentSpeedIndex = 0;
 
     let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
-    let ttsCurrentPage = 0; // TTS가 현재 읽고 있는 페이지 추적용
+    let ttsCurrentPage = 0; 
     let ttsUtterance = null, selectedVoice = null;
     let paragraphsToSpeak =[], currentSpeakingIndex = -1;
-    
     let longPressTimer = null, targetParagraph = null, selectedShelfBookId = null;
-
     const defaultColors =['#6e8efb', '#f6d365', '#84fab0', '#ff0844', '#4facfe', '#9b59b6'];
 
     const els = {
         app: document.getElementById('app'), 
         vShelf: document.getElementById('view-bookshelf'), list: document.getElementById('book-list'),
-        vInput: document.getElementById('view-input'), title: document.getElementById('book-title'), text: document.getElementById('text-input'),
+        vInput: document.getElementById('view-input'), title: document.getElementById('book-title'), text: document.getElementById('text-input'), btnStart: document.getElementById('btn-save-read'),
         vReader: document.getElementById('view-reader'), viewer: document.getElementById('viewer-container'), content: document.getElementById('book-content'),
         titleTop: document.getElementById('top-title'), btnBack: document.getElementById('back-btn'), header: document.getElementById('main-header'),
         pageNum: document.getElementById('pageNumber'), progress: document.getElementById('nav-progress-fill'),
@@ -309,6 +311,18 @@
     };
 
     document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
+
+    // 앱 초기화 (IndexedDB 연동)
+    window.onload = async () => {
+        try {
+            await initDB();
+            myBooks = await loadAllBooks();
+            myBooks.sort((a,b) => b.id - a.id); // 최신순 정렬
+            showBookshelf();
+        } catch (e) {
+            alert("데이터베이스 초기화에 실패했습니다. 프라이빗 모드인지 확인해주세요.");
+        }
+    };
 
     function playPaperSound() {
         try {
@@ -342,6 +356,21 @@
     }
 
     function closeShelfMenu() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
+    
+    // [신규] 소설 수정 기능
+    function editSelectedBook() {
+        const book = myBooks.find(b => b.id === selectedShelfBookId);
+        closeShelfMenu();
+        if(!book) return;
+        editingBookId = book.id;
+        els.title.value = book.title;
+        els.text.value = book.text;
+        els.btnStart.textContent = "수정하고 읽기";
+        
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex';
+        els.titleTop.textContent = "소설 수정"; els.btnBack.style.display = 'flex';
+    }
+
     function triggerLocalCover() { document.getElementById('cover-upload').click(); }
     document.getElementById('cover-upload').addEventListener('change', function(e) { 
         const file = e.target.files[0]; if(!file) return; 
@@ -349,22 +378,25 @@
         const reader = new FileReader(); 
         reader.onload = function(evt) { 
             const img = new Image();
-            img.onload = function() {
+            img.onload = async function() {
                 const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
                 const MAX_WIDTH = 300; const scaleSize = MAX_WIDTH / img.width;
                 canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 const b = myBooks.find(x => x.id === targetBookId); 
-                if(b) { b.coverUrl = canvas.toDataURL('image/jpeg', 0.8); localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); }
+                if(b) { b.coverUrl = canvas.toDataURL('image/jpeg', 0.8); await saveBookToDB(b); renderBookshelf(); }
             }; img.src = evt.target.result;
         }; reader.readAsDataURL(file); 
     });
     
-    function resetCover() { const id = selectedShelfBookId; closeShelfMenu(); const b = myBooks.find(x => x.id === id); if(b) { delete b.coverUrl; localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); } }
-    function deleteSelectedBook() { const id = selectedShelfBookId; closeShelfMenu(); if(confirm('삭제하시겠습니까?')) { myBooks = myBooks.filter(b => b.id !== id); localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); } }
+    async function resetCover() { const id = selectedShelfBookId; closeShelfMenu(); const b = myBooks.find(x => x.id === id); if(b) { delete b.coverUrl; await saveBookToDB(b); renderBookshelf(); } }
+    async function deleteSelectedBook() { const id = selectedShelfBookId; closeShelfMenu(); if(confirm('삭제하시겠습니까?')) { myBooks = myBooks.filter(b => b.id !== id); await deleteBookFromDB(id); renderBookshelf(); } }
 
     function showBookshelf() {
         if(isTtsSpeaking) stopTts();
+        editingBookId = null; // 수정 모드 초기화
+        els.btnStart.textContent = "저장하고 읽기";
+        
         els.app.classList.remove('hud-hidden');
         els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
         els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none';
@@ -372,15 +404,33 @@
     }
 
     function showInputScreen() {
+        editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
         els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex';
         els.titleTop.textContent = "새 소설 추가"; els.btnBack.style.display = 'flex'; els.title.value = ''; els.text.value = '';
     }
 
-    function saveAndRead() {
+    async function saveAndRead() {
         const title = els.title.value.trim() || '제목 없는 소설'; const text = els.text.value.trim();
         if (!text) return alert("내용을 입력해주세요!");
-        const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[] };
-        myBooks.unshift(newBook); localStorage.setItem('myBooks', JSON.stringify(myBooks)); openBook(newBook.id);
+        
+        if (editingBookId) {
+            // 기존 소설 수정 (IndexedDB 업데이트)
+            const bookIndex = myBooks.findIndex(b => b.id === editingBookId);
+            if(bookIndex > -1) {
+                myBooks[bookIndex].title = title;
+                myBooks[bookIndex].text = text;
+                await saveBookToDB(myBooks[bookIndex]);
+                openBook(editingBookId);
+            }
+            editingBookId = null;
+            els.btnStart.textContent = "저장하고 읽기";
+        } else {
+            // 새 소설 추가
+            const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[] };
+            myBooks.unshift(newBook); 
+            await saveBookToDB(newBook);
+            openBook(newBook.id);
+        }
     }
 
     // --- 독서 (자동 포맷팅) ---
@@ -421,7 +471,7 @@
 
     function calculatePages() { const w = els.viewer.clientWidth; totalPages = Math.round(els.content.scrollWidth / w) || 1; }
     function updateProgressUI() { els.pageNum.textContent = `${currentPage + 1} / ${totalPages}`; els.progress.style.width = `${(currentPage / (totalPages - 1 || 1)) * 100}%`; }
-    function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; localStorage.setItem('myBooks', JSON.stringify(myBooks)); } }
+    async function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; await saveBookToDB(myBooks[i]); } }
 
     // --- 엄격한 스크롤 & 터치 ---
     let touchStartX = 0, touchStartY = 0, isLongPress = false, isViewerSwiping = false;
@@ -469,7 +519,6 @@
             currentPage = newPage;
             els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
             playPaperSound(); saveProgress(); updateProgressUI();
-            // 페이지 넘길 때는 TTS를 멈추거나 방해하지 않음 (딴짓 기능)
         }
     }
 
@@ -501,23 +550,36 @@
     
     function startTtsFromTarget() { 
         hideContextMenu(); 
-        currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); // 시작 위치 동기화
+        currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth);
         startTtsAtParagraph(targetParagraph); 
     }
     
-    function toggleHighlight() {
+    async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
         if(targetParagraph.classList.contains('highlight')) { targetParagraph.classList.remove('highlight'); book.highlights = book.highlights.filter(i => i !== idx); } 
         else { targetParagraph.classList.add('highlight'); if(!book.highlights.includes(idx)) book.highlights.push(idx); }
-        localStorage.setItem('myBooks', JSON.stringify(myBooks)); hideContextMenu();
+        await saveBookToDB(book); hideContextMenu();
     }
     function copyTargetText() { if(targetParagraph) navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("복사되었습니다.")); hideContextMenu(); }
 
-    // --- TTS (동기화 & 문단 쪼개기 극복) ---
+    // --- TTS (고품질 AI 목소리 최우선 탐색 로직 적용) ---
     function initVoices() {
         const voices = speechSynthesis.getVoices();
-        selectedVoice = voices.find(v => v.lang === 'ko-KR' && (v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Yuna'))) || voices.find(v => v.lang === 'ko-KR');
+        const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
+
+        if (koVoices.length > 0) {
+            // 1순위: MS Edge 브라우저의 Azure 인공지능 신경망 목소리 (압도적 1위)
+            let bestVoice = koVoices.find(v => v.name.includes('Online (Natural)'));
+            // 2순위: 애플 iOS / Mac 프리미엄 목소리
+            if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Premium'));
+            // 3순위: 삼성/구글 향상된 목소리
+            if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Yuna') || v.name.includes('SunHi') || v.name.includes('InJoon'));
+            // 4순위: 기본 목소리
+            if (!bestVoice) bestVoice = koVoices[0];
+            
+            selectedVoice = bestVoice;
+        }
     }
     if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoices; else initVoices();
 
@@ -578,7 +640,6 @@
         }
     }
     
-    // TTS 위치로 강제 동기화 (버튼 클릭 시)
     function syncTtsPage() {
         if (currentPage !== ttsCurrentPage && isTtsSpeaking) {
             currentPage = ttsCurrentPage;
@@ -596,7 +657,6 @@
         
         const startPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
         
-        // 사용자가 다른 페이지를 구경 중이지 않을 때만(읽고있는 곳을 보고있을때만) 화면을 따라가게 함
         if (currentPage === ttsCurrentPage || isManualRestart) {
             if(startPage !== currentPage) {
                 currentPage = startPage;
@@ -610,7 +670,6 @@
         if (selectedVoice) ttsUtterance.voice = selectedVoice;
         ttsUtterance.rate = speedOptions[currentSpeedIndex];
         
-        //[문단 잘림 완벽 극복] 단어 추적 로직 (페이지를 걸치고 있으면 실시간으로 넘김)
         ttsUtterance.onboundary = (e) => {
             if (e.name !== 'word' && e.name !== 'sentence') return;
             let textNode = null;
@@ -626,13 +685,11 @@
                 range.setStart(textNode, start); range.setEnd(textNode, end);
                 const rect = range.getBoundingClientRect();
                 
-                // 단어의 가로 위치를 계산해서 페이지 알아내기
                 const viewerRect = els.viewer.getBoundingClientRect();
                 const absoluteLeft = els.viewer.scrollLeft + (rect.left - viewerRect.left);
-                const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth); // 여백 버퍼링 10px
+                const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
 
                 if (wordPage >= 0 && wordPage < totalPages) {
-                    // 사용자가 딴 페이지를 보는 중이 아니라면 단어 페이지에 맞춰서 따라가기
                     if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) {
                         currentPage = wordPage;
                         els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
@@ -671,7 +728,6 @@
     }
 
     window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
-    showBookshelf();
 </script>
 </body>
 </html>
