@@ -22,15 +22,7 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
-        /* [핵심 수정] 100dvh 적용 및 touch-action 해제 (먹통 현상 완벽 해결) */
-        body, html { 
-            width: 100%; 
-            height: 100vh; /* 기본 지원 */
-            height: 100dvh; /* 모바일 하단바 가림 방지 동적 높이 */
-            background-color: var(--bg-color); 
-            overflow: hidden; 
-            overscroll-behavior: none; /* 바운스 스크롤 방지 */
-        }
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
         /* --- 상단 헤더 --- */
@@ -65,7 +57,7 @@
         .tts-speed-btn { width: 42px; background: transparent; border: 1px solid #ddd; font-size: 12px;}
 
         /* --- 서재 화면 --- */
-        #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; -webkit-overflow-scrolling: touch; }
+        #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: auto;}
         #book-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; }
         .book-card { display: flex; flex-direction: column; cursor: pointer; user-select: none; }
         .book-cover { 
@@ -81,6 +73,7 @@
         .add-fab:active { transform: translateX(200px) scale(0.95); }
         @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } .add-fab:active { transform: scale(0.95); } }
 
+        /* 서재 꾹 누르기 메뉴 */
         #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
         #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -89,7 +82,7 @@
         .menu-item.danger { color: #ff3b30; border-bottom: none; }
 
         /* --- 입력 화면 --- */
-        #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; -webkit-overflow-scrolling: touch; }
+        #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
         input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
         textarea { flex: 1; min-height: 200px; resize: none; }
         .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.1s;}
@@ -97,9 +90,7 @@
 
         /* --- 독서 화면 --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
-        
-        /*[핵심 수정] 뷰어 컨테이너에만 touch-action: none을 주어 브라우저 스와이프를 막음 */
-        #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; touch-action: none; }
+        #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; }
 
         #book-content { 
             height: 100%; padding: 30px 20px; box-sizing: border-box;
@@ -110,8 +101,15 @@
         #book-content p { 
             font-family: 'Gowun Batang', serif !important; font-size: var(--font-size); 
             line-height: 1.95; letter-spacing: -0.5px; color: var(--text-color); text-align: justify; word-break: keep-all;
-            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; user-select: none;
+            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; 
             padding: 4px 8px; border-radius: 12px; 
+            
+            /* [핵심 수정] 브라우저 기본 텍스트 선택 및 팝업 완벽 차단 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
         #book-content p.dialogue { text-indent: 0 !important; }
         #book-content p.empty-line { margin-bottom: 0; height: 1em; padding: 0; }
@@ -142,8 +140,6 @@
         #nav-progress-fill { width: 0%; height: 100%; background: #333; transition: width 0.3s ease-out; border-radius: 0 2px 2px 0; }
         .icon-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; transition: background 0.2s; }
         .icon-btn:active { background: rgba(0,0,0,0.05); }
-        
-        /* [핵심 수정] div -> button 으로 변경하여 모바일 클릭 씹힘 100% 방지 */
         .page-count { font-size: 13px; font-weight: 600; opacity: 0.7; letter-spacing: 1px; cursor: pointer; padding: 8px 12px; border-radius: 12px; background: none; border: none; color: inherit; font-family: inherit;}
         .page-count:active { background: rgba(0,0,0,0.05); }
 
@@ -207,7 +203,6 @@
             </button>
         </div>
         
-        <!-- 홈 화면 우측 상단 바로가기 메뉴 (백업 불러오기) -->
         <div class="header-right" id="header-actions">
             <button class="header-btn" onclick="document.getElementById('import-file').click()" title="백업 파일 불러오기" style="font-size:20px; justify-content:flex-end;">📂</button>
         </div>
@@ -254,7 +249,7 @@
         </footer>
     </div>
 
-    <!-- 바텀 시트 (설정 및 전체 백업 관리) -->
+    <!-- 바텀 시트 (설정 및 전체 백업) -->
     <div id="sheet-overlay" onclick="closeSettings()"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
@@ -346,7 +341,6 @@
         ttsControls: document.getElementById('tts-header-controls'), ttsPauseBtn: document.getElementById('tts-pause-btn'), ttsSpeedBtn: document.getElementById('tts-speed-btn')
     };
 
-    // [최적화] 안전한 앱 초기화 
     window.onload = async () => {
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
         setTheme(currentTheme, null, true);
@@ -358,7 +352,7 @@
         } catch (e) {
             console.error("DB 로드 실패:", e);
         }
-        showBookshelf(); // DB 에러가 나도 앱 화면은 정상적으로 뜨도록 보장
+        showBookshelf(); 
     };
 
     function playPaperSound() {
@@ -372,7 +366,7 @@
         } catch(e) {}
     }
 
-    // --- 서재 렌더링 로직 ---
+    // --- 서재 렌더링 ---
     function renderBookshelf() {
         if (myBooks.length === 0) {
             els.list.innerHTML = `
@@ -470,7 +464,7 @@
         }
     }
 
-    // --- 데이터 백업 및 복구 모듈 ---
+    // --- 데이터 백업 및 복구 ---
     function triggerDownload(data, filename) {
         const dataStr = JSON.stringify(data);
         const blob = new Blob([dataStr], {type: "application/json"});
@@ -525,7 +519,7 @@
         event.target.value = ''; 
     }
 
-    // --- 독서 (웹소설 최적화 포맷팅) ---
+    // --- 독서 (자동 포맷팅) ---
     function openBook(id) {
         const book = myBooks.find(b => b.id === id); if(!book) return;
         currentBookId = id; currentPage = book.currentPage || 0;
@@ -565,8 +559,13 @@
     function updateProgressUI() { els.pageNum.textContent = `${currentPage + 1} / ${totalPages}`; els.progress.style.width = `${(currentPage / (totalPages - 1 || 1)) * 100}%`; }
     async function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; await saveBookToDB(myBooks[i]); } }
 
-    // --- 엄격한 스와이프 및 터치 제어 ---
+    // --- 스크롤 및 터치 이벤트 제어 (기본 팝업 방지용 JS 처리) ---
     let touchStartX = 0, touchStartY = 0, isLongPress = false, isViewerSwiping = false;
+
+    // 브라우저 기본 우클릭/꾹누르기 메뉴 차단 (복사/붙여넣기 시스템 팝업 띄움 방지)
+    els.viewer.addEventListener('contextmenu', e => {
+        e.preventDefault();
+    });
 
     els.viewer.addEventListener('touchstart', e => {
         const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; 
@@ -639,7 +638,6 @@
     }
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
-    
     async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
@@ -647,9 +645,14 @@
         else { targetParagraph.classList.add('highlight'); if(!book.highlights.includes(idx)) book.highlights.push(idx); }
         await saveBookToDB(book); hideContextMenu();
     }
-    function copyTargetText() { if(targetParagraph) navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); hideContextMenu(); }
+    function copyTargetText() { 
+        if(targetParagraph) {
+            navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); 
+        }
+        hideContextMenu(); 
+    }
 
-    // --- TTS 설정 ---
+    // --- TTS 로직 ---
     function initVoices() {
         const voices = speechSynthesis.getVoices();
         const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
@@ -743,7 +746,6 @@
         if (selectedVoice) ttsUtterance.voice = selectedVoice;
         ttsUtterance.rate = speedOptions[currentSpeedIndex];
         
-        // 단어 단위 추적
         ttsUtterance.onboundary = (e) => {
             if (e.charIndex === undefined) return;
             lastCharIndex = e.charIndex;
