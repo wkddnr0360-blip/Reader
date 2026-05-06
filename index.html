@@ -13,7 +13,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 테마 및 기본 리셋 --- */
         :root { 
             --bg-color: #ffffff; --text-color: #333333; --ui-bg: #ffffff; --ui-text: #333333; --ui-border: rgba(0,0,0,0.05); 
             --font-size: 18px; 
@@ -25,16 +24,10 @@
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
-        /*[안드로이드 앱 전용 CSS 방어막] 모든 UI 요소 텍스트 선택 방지 */
         #view-reader, #view-bookshelf, header, #context-popup, #shelf-menu, #reader-nav-pill, #settings-sheet, .add-fab {
-            -webkit-user-select: none !important;
-            -moz-user-select: none !important;
-            -ms-user-select: none !important;
-            user-select: none !important;
-            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important;
         }
 
-        /* --- 상단 헤더 --- */
         header { 
             width: 100%; height: 56px; border-bottom: 1px solid var(--ui-border); 
             display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--ui-bg); color: var(--ui-text);
@@ -44,7 +37,6 @@
         header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
         .header-right { width: 40px; display: flex; justify-content: flex-end; align-items: center; }
 
-        /* --- 헤더 통합 TTS 컨트롤러 --- */
         #tts-header-controls { 
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             display: flex; align-items: center; gap: 6px; 
@@ -56,16 +48,13 @@
         #tts-header-controls.active { opacity: 1; pointer-events: auto; }
         
         .tts-ctrl-btn { 
-            width: 32px; height: 32px; border-radius: 16px; 
-            background: #f0f0f0; color: #333; border: none; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
-            transition: transform 0.1s, background 0.2s;
+            width: 32px; height: 32px; border-radius: 16px; background: #f0f0f0; color: #333; border: none; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; transition: transform 0.1s, background 0.2s;
         }
         .tts-ctrl-btn:active { transform: scale(0.9); background: #e0e0e0; }
         .tts-ctrl-btn svg { width: 14px; height: 14px; }
         .tts-speed-btn { width: 42px; background: transparent; border: 1px solid #ddd; font-size: 12px;}
 
-        /* --- 서재 화면 --- */
         #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: auto;}
         #book-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; }
         .book-card { display: flex; flex-direction: column; cursor: pointer; user-select: none; }
@@ -89,34 +78,24 @@
         .menu-item:active { background: #f5f5f5; }
         .menu-item.danger { color: #ff3b30; border-bottom: none; }
 
-        /* --- 입력 화면 --- */
         #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
         input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
         textarea { flex: 1; min-height: 200px; resize: none; }
         .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.1s;}
         .start-btn:active { transform: scale(0.98); }
 
-        /* --- 독서 화면 --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
         #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; }
 
         #book-content { 
-            height: 100%; padding: 30px 20px; box-sizing: border-box;
-            column-width: calc(100vw - 40px); column-gap: 40px; column-fill: auto;
+            height: 100%; padding: 30px 20px; box-sizing: border-box; column-width: calc(100vw - 40px); column-gap: 40px; column-fill: auto;
         }
         @media (min-width: 500px) { #book-content { column-width: 460px; } }
         
         #book-content p { 
-            font-family: 'Gowun Batang', serif !important; font-size: var(--font-size); 
-            line-height: 1.95; letter-spacing: -0.5px; color: var(--text-color); text-align: justify; word-break: keep-all;
-            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; 
-            padding: 4px 8px; border-radius: 12px; 
-            
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
+            font-family: 'Gowun Batang', serif !important; font-size: var(--font-size); line-height: 1.95; letter-spacing: -0.5px; color: var(--text-color); text-align: justify; word-break: keep-all;
+            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; padding: 4px 8px; border-radius: 12px; 
+            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
         #book-content p.dialogue { text-indent: 0 !important; }
         #book-content p.empty-line { margin-bottom: 0; height: 1em; padding: 0; }
@@ -124,33 +103,36 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
+        /* 삽화 이미지 컨테이너 */
+        .illust-container {
+            width: 100%; margin: 16px 0; position: relative; text-align: center;
+            break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid;
+        }
+        .illust-img {
+            max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); object-fit: contain;
+        }
+        .illust-del-btn {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff;
+            border: none; width: 32px; height: 32px; border-radius: 16px; cursor: pointer; font-size: 14px; z-index: 10;
+        }
+
         #context-popup {
-            position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; 
-            border-radius: 16px; display: none; z-index: 150; 
+            position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; border-radius: 16px; display: none; z-index: 150; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.05); flex-direction: row; overflow: hidden;
         }
-        .ctx-item { padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-right: 1px solid rgba(0,0,0,0.05); }
+        .ctx-item { padding: 12px 18px; font-size: 14px; font-weight: 600; cursor: pointer; border-right: 1px solid rgba(0,0,0,0.05); }
         .ctx-item:active { background: rgba(0,0,0,0.05); }
         .ctx-item:last-child { border-right: none; }
 
-        /* --- 하단 네비게이션 알약 --- */
         #reader-nav-pill { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            width: calc(100% - 40px); max-width: 400px; height: 60px; 
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; height: 60px; 
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-radius: 30px; display: flex; align-items: center; justify-content: space-between; 
-            padding: 0 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.4);
-            z-index: 100; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-            color: #333; overflow: hidden;
+            border-radius: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.4);
+            z-index: 100; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; color: #333; overflow: hidden;
         }
-        
-        /* [핵심 기능] 슬라이드 가능한 터치 진행바 Hitbox 영역 확대 */
-        .nav-progress-hitbox {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 24px; cursor: pointer; z-index: 10;
-        }
+        .nav-progress-hitbox { position: absolute; bottom: 0; left: 0; width: 100%; height: 24px; cursor: pointer; z-index: 10; }
         .nav-progress-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(0,0,0,0.05); }
         #nav-progress-fill { width: 0%; height: 100%; background: #333; transition: width 0.1s linear; border-radius: 0 2px 2px 0; }
-        
         .icon-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; transition: background 0.2s; z-index: 20; position: relative;}
         .icon-btn:active { background: rgba(0,0,0,0.05); }
         .page-count { font-size: 13px; font-weight: 600; opacity: 0.7; letter-spacing: 1px; cursor: pointer; padding: 8px 12px; border-radius: 12px; background: none; border: none; color: inherit; font-family: inherit; z-index: 20; position: relative;}
@@ -159,12 +141,10 @@
         .hud-hidden header { transform: translateY(-100%); opacity: 0; pointer-events: none; }
         .hud-hidden #reader-nav-pill { transform: translate(-50%, 150%); opacity: 0; pointer-events: none !important; }
         
-        /* 설정 시트 */
         #sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 210; display: none; backdrop-filter: blur(2px);}
         #settings-sheet { 
             position: absolute; bottom: 0; left: 0; width: 100%; background: var(--ui-bg); color: var(--ui-text);
-            border-radius: 24px 24px 0 0; padding: 28px 24px 36px; box-shadow: 0 -4px 30px rgba(0,0,0,0.15);
-            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 211;
+            border-radius: 24px 24px 0 0; padding: 28px 24px 36px; box-shadow: 0 -4px 30px rgba(0,0,0,0.15); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 211;
         }
         #settings-sheet.show { transform: translateY(0); }
         .setting-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; opacity: 0.5; margin-top: 10px; }
@@ -192,7 +172,6 @@
 </head>
 <body class="theme-white">
 
-    <!-- [안드로이드 APK/웹뷰 전용] 자바스크립트 3중 방어막 (시스템 팝업 원천 차단) -->
     <script>
         document.addEventListener('contextmenu', e => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') e.preventDefault(); });
         document.addEventListener('selectstart', e => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') e.preventDefault(); });
@@ -248,24 +227,24 @@
 
     <div id="view-input">
         <input type="text" id="book-title" placeholder="소설 제목">
-        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수백~수천 편도 여유롭게 저장됩니다!)"></textarea>
+        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요."></textarea>
         <button class="start-btn" id="btn-save-read" onclick="saveAndRead()">저장하고 읽기</button>
     </div>
 
     <div id="view-reader">
+        <!-- 팝업 메뉴에 삽화 생성 추가 -->
         <div id="context-popup" oncontextmenu="return false;">
-            <div class="ctx-item" onclick="startTtsFromTarget()">🔊 여기서부터 재생</div>
-            <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
+            <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
+            <div class="ctx-item" onclick="generateIllustration()">🎨 삽화</div>
+            <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광</div>
             <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
         </div>
         <div id="viewer-container"><div id="book-content"></div></div>
         
         <footer id="reader-nav-pill">
-            <!-- [추가] 터치 드래그가 가능한 넓은 진행바 히트박스 영역 -->
             <div class="nav-progress-hitbox" id="progress-hitbox">
                 <div class="nav-progress-bg"><div id="nav-progress-fill"></div></div>
             </div>
-            
             <button class="icon-btn" onclick="showBookshelf()"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg></button>
             <button class="page-count" id="pageNumber" onclick="promptPageJump()">1 / 1</button>
             <div style="display:flex; gap:16px;">
@@ -291,7 +270,7 @@
             <button class="font-btn" onclick="changeFontSize(-1)">가 -</button>
             <button class="font-btn" onclick="changeFontSize(1)">가 +</button>
         </div>
-        <div class="setting-title">전체 데이터 백업 및 복원 (기기 변경 시 사용)</div>
+        <div class="setting-title">전체 데이터 백업 및 복원</div>
         <div class="font-control">
             <button class="font-btn" onclick="exportAllData()">📚 모든 소설 백업</button>
             <button class="font-btn" onclick="document.getElementById('import-file').click()">📂 파일 불러오기</button>
@@ -300,17 +279,11 @@
 </div>
 
 <script>
-    // ---[개인 설정] 저장 ---
     let savedSettings = { fontSize: 18, theme: 'white' };
-    try {
-        const stored = localStorage.getItem('pacemakerSettings');
-        if (stored) savedSettings = JSON.parse(stored);
-    } catch(e) {}
-    
+    try { const stored = localStorage.getItem('pacemakerSettings'); if (stored) savedSettings = JSON.parse(stored); } catch(e) {}
     let fontSize = savedSettings.fontSize || 18;
     let currentTheme = savedSettings.theme || 'white';
 
-    // ---[대용량 DB] IndexedDB 설정 ---
     const DB_NAME = 'PacemakerDB';
     const STORE_NAME = 'books';
     let db;
@@ -318,23 +291,13 @@
     function initDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open(DB_NAME, 1);
-            req.onupgradeneeded = e => {
-                db = e.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-            };
-            req.onsuccess = e => { db = e.target.result; resolve(); };
-            req.onerror = e => reject(e);
+            req.onupgradeneeded = e => { db = e.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' }); };
+            req.onsuccess = e => { db = e.target.result; resolve(); }; req.onerror = e => reject(e);
         });
     }
-    async function saveBookToDB(book) {
-        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(book); tx.oncomplete = resolve; });
-    }
-    async function deleteBookFromDB(id) {
-        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(id); tx.oncomplete = resolve; });
-    }
-    async function loadAllBooks() {
-        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result ||[]); });
-    }
+    async function saveBookToDB(book) { return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(book); tx.oncomplete = resolve; }); }
+    async function deleteBookFromDB(id) { return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(id); tx.oncomplete = resolve; }); }
+    async function loadAllBooks() { return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result ||[]); }); }
 
     let myBooks =[];
     let currentBookId = null, totalPages = 1, currentPage = 0;
@@ -346,17 +309,13 @@
     let currentSpeedIndex = 0;
 
     let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
-    let ttsCurrentPage = 0; 
-    let ttsUtterance = null, selectedVoice = null;
-    let paragraphsToSpeak =[], currentSpeakingIndex = -1;
-    let lastCharIndex = 0; 
-
+    let ttsCurrentPage = 0; let ttsUtterance = null, selectedVoice = null;
+    let paragraphsToSpeak =[], currentSpeakingIndex = -1; let lastCharIndex = 0; 
     let longPressTimer = null, targetParagraph = null, selectedShelfBookId = null;
     const defaultColors =['#6e8efb', '#f6d365', '#84fab0', '#ff0844', '#4facfe', '#9b59b6'];
 
     const els = {
-        app: document.getElementById('app'), 
-        vShelf: document.getElementById('view-bookshelf'), list: document.getElementById('book-list'),
+        app: document.getElementById('app'), vShelf: document.getElementById('view-bookshelf'), list: document.getElementById('book-list'),
         vInput: document.getElementById('view-input'), title: document.getElementById('book-title'), text: document.getElementById('text-input'), btnStart: document.getElementById('btn-save-read'),
         vReader: document.getElementById('view-reader'), viewer: document.getElementById('viewer-container'), content: document.getElementById('book-content'),
         titleTop: document.getElementById('top-title'), btnBack: document.getElementById('back-btn'), header: document.getElementById('main-header'),
@@ -369,12 +328,7 @@
     window.onload = async () => {
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
         setTheme(currentTheme, null, true);
-
-        try {
-            await initDB();
-            myBooks = await loadAllBooks();
-            myBooks.sort((a,b) => b.id - a.id);
-        } catch (e) {}
+        try { await initDB(); myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id); } catch (e) {}
         showBookshelf(); 
     };
 
@@ -389,18 +343,11 @@
         } catch(e) {}
     }
 
-    // --- 서재 ---
     function renderBookshelf() {
         if (myBooks.length === 0) {
-            els.list.innerHTML = `
-                <div style="grid-column:1/-1; text-align:center; margin-top:60px; color:#666;">
-                    <div style="font-size:40px; margin-bottom:16px;">📚</div>
-                    <p style="margin-bottom:24px; line-height:1.6;">우측 하단 <b>+</b> 버튼을 눌러 소설을 추가하거나<br>기존 백업 파일로 복원해보세요!</p>
-                    <button onclick="document.getElementById('import-file').click()" style="padding:14px 24px; border-radius:24px; border:1px solid #ddd; background:#fff; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.05); font-size:15px; color:#333;">📂 백업 파일 불러오기</button>
-                </div>`;
+            els.list.innerHTML = `<div style="grid-column:1/-1; text-align:center; margin-top:60px; color:#666;"><div style="font-size:40px; margin-bottom:16px;">📚</div><p style="margin-bottom:24px; line-height:1.6;">우측 하단 <b>+</b> 버튼을 눌러 소설을 추가하거나<br>기존 백업 파일로 복원해보세요!</p><button onclick="document.getElementById('import-file').click()" style="padding:14px 24px; border-radius:24px; border:1px solid #ddd; background:#fff; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.05); font-size:15px; color:#333;">📂 백업 파일 불러오기</button></div>`;
             return;
         }
-
         els.list.innerHTML = '';
         myBooks.forEach((book, idx) => {
             const div = document.createElement('div'); div.className = 'book-card';
@@ -421,14 +368,8 @@
     function closeShelfMenu() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
     
     function editSelectedBook() {
-        const book = myBooks.find(b => b.id === selectedShelfBookId);
-        closeShelfMenu();
-        if(!book) return;
-        editingBookId = book.id;
-        els.title.value = book.title;
-        els.text.value = book.text;
-        els.btnStart.textContent = "수정하고 읽기";
-        
+        const book = myBooks.find(b => b.id === selectedShelfBookId); closeShelfMenu(); if(!book) return;
+        editingBookId = book.id; els.title.value = book.title; els.text.value = book.text; els.btnStart.textContent = "수정하고 읽기";
         els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "소설 수정"; els.btnBack.style.display = 'flex';
     }
@@ -436,8 +377,7 @@
     function triggerLocalCover() { document.getElementById('cover-upload').click(); }
     document.getElementById('cover-upload').addEventListener('change', function(e) { 
         const file = e.target.files[0]; if(!file) return; 
-        const targetBookId = selectedShelfBookId; closeShelfMenu(); 
-        const reader = new FileReader(); 
+        const targetBookId = selectedShelfBookId; closeShelfMenu(); const reader = new FileReader(); 
         reader.onload = function(evt) { 
             const img = new Image();
             img.onload = async function() {
@@ -457,89 +397,62 @@
     function showBookshelf() {
         if(isTtsSpeaking) stopTts();
         editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
-        els.app.classList.remove('hud-hidden');
-        els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
-        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none'; els.headerActions.style.display = 'flex';
-        renderBookshelf();
+        els.app.classList.remove('hud-hidden'); els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
+        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none'; els.headerActions.style.display = 'flex'; renderBookshelf();
     }
 
     function showInputScreen() {
-        editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
-        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
+        editingBookId = null; els.btnStart.textContent = "저장하고 읽기"; els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "새 소설 추가"; els.btnBack.style.display = 'flex'; els.title.value = ''; els.text.value = '';
     }
 
     async function saveAndRead() {
         const title = els.title.value.trim() || '제목 없는 소설'; const text = els.text.value.trim();
         if (!text) return alert("소설 내용을 입력해주세요!");
-        
         if (editingBookId) {
             const bookIndex = myBooks.findIndex(b => b.id === editingBookId);
-            if(bookIndex > -1) {
-                myBooks[bookIndex].title = title; myBooks[bookIndex].text = text;
-                await saveBookToDB(myBooks[bookIndex]); openBook(editingBookId);
-            }
+            if(bookIndex > -1) { myBooks[bookIndex].title = title; myBooks[bookIndex].text = text; await saveBookToDB(myBooks[bookIndex]); openBook(editingBookId); }
             editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
         } else {
-            const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[] };
+            const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[], illustrations: {} };
             myBooks.unshift(newBook); await saveBookToDB(newBook); openBook(newBook.id);
         }
     }
 
-    // --- 데이터 백업 및 복구 ---
     function triggerDownload(data, filename) {
-        const dataStr = JSON.stringify(data);
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+        const dataStr = JSON.stringify(data); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
     }
-
     async function exportAllData() {
-        try {
-            const allBooks = await loadAllBooks();
-            if (allBooks.length === 0) return alert("백업할 데이터가 없습니다.");
-            triggerDownload(allBooks, `pacemaker_all_backup_${new Date().toISOString().slice(0,10)}.json`);
-            closeSettings();
-        } catch (e) { alert("전체 백업 중 오류가 발생했습니다."); }
+        try { const allBooks = await loadAllBooks(); if (allBooks.length === 0) return alert("백업할 데이터가 없습니다."); triggerDownload(allBooks, `pacemaker_all_backup_${new Date().toISOString().slice(0,10)}.json`); closeSettings(); } catch (e) { alert("전체 백업 중 오류가 발생했습니다."); }
     }
-
     async function exportSingleBook() {
-        try {
-            const book = myBooks.find(b => b.id === selectedShelfBookId);
-            closeShelfMenu();
-            if (!book) return;
-            const safeTitle = book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_'); 
-            triggerDownload([book], `pacemaker_book_${safeTitle}.json`);
-        } catch (e) { alert("개별 백업 중 오류가 발생했습니다."); }
+        try { const book = myBooks.find(b => b.id === selectedShelfBookId); closeShelfMenu(); if (!book) return; triggerDownload([book], `pacemaker_book_${book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.json`); } catch (e) { alert("백업 중 오류가 발생했습니다."); }
     }
-
     async function importData(event) {
-        const file = event.target.files[0];
-        if(!file) return;
+        const file = event.target.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                let importedData = JSON.parse(e.target.result);
-                if(!Array.isArray(importedData)) importedData =[importedData];
+                let importedData = JSON.parse(e.target.result); if(!Array.isArray(importedData)) importedData =[importedData];
                 let count = 0;
                 for (const book of importedData) {
-                    if(book.id && book.title && book.text) { await saveBookToDB(book); count++; }
+                    if(book.id && book.title && book.text) { 
+                        if(!book.illustrations) book.illustrations = {}; 
+                        await saveBookToDB(book); count++; 
+                    }
                 }
-                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`);
-                myBooks = await loadAllBooks();
-                myBooks.sort((a,b) => b.id - a.id);
-                renderBookshelf(); closeSettings();
+                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`); myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id); renderBookshelf(); closeSettings();
             } catch(err) { alert("올바른 백업 파일이 아닙니다."); }
-        };
-        reader.readAsText(file); event.target.value = ''; 
+        }; reader.readAsText(file); event.target.value = ''; 
     }
 
-    // --- 독서 (자동 포맷팅) ---
+    // --- 독서 뷰 렌더링 (삽화 기능 포함) ---
     function openBook(id) {
         const book = myBooks.find(b => b.id === id); if(!book) return;
         currentBookId = id; currentPage = book.currentPage || 0;
         if(!book.highlights) book.highlights =[]; 
+        if(!book.illustrations) book.illustrations = {};
 
         els.content.innerHTML = '';
         const lines = book.text.split('\n'); let prevEmpty = false;
@@ -548,34 +461,34 @@
             const t = line.trim();
             if(t === '') { 
                 if(!prevEmpty) { const p = document.createElement('p'); p.className = 'empty-line'; p.innerHTML = '&nbsp;'; els.content.appendChild(p); prevEmpty = true; }
-            } 
-            else if (!t.startsWith('/*')) {
+            } else if (!t.startsWith('/*')) {
                 prevEmpty = false;
                 const p = document.createElement('p'); p.textContent = t; p.dataset.idx = idx;
                 if(/^[“‘"'\u300C\u300E]/.test(t)) p.classList.add('dialogue');
                 if(book.highlights.includes(idx)) p.classList.add('highlight');
                 els.content.appendChild(p);
+
+                // 저장된 삽화가 있다면 문단 아래에 추가
+                if(book.illustrations[idx]) {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'illust-container';
+                    imgContainer.innerHTML = `<img src="${book.illustrations[idx]}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
+                    els.content.appendChild(imgContainer);
+                }
             }
         });
 
         els.vShelf.style.display = 'none'; els.vInput.style.display = 'none'; els.vReader.style.display = 'flex'; els.headerActions.style.display = 'none';
-        els.titleTop.textContent = book.title; els.btnBack.style.display = 'flex'; 
-        els.app.classList.add('hud-hidden'); 
-
+        els.titleTop.textContent = book.title; els.btnBack.style.display = 'flex'; els.app.classList.add('hud-hidden'); 
         paragraphsToSpeak = Array.from(els.content.querySelectorAll('p:not(.empty-line)'));
         
-        setTimeout(() => {
-            calculatePages();
-            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' });
-            updateProgressUI();
-        }, 100);
+        setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); updateProgressUI(); }, 150);
     }
 
     function calculatePages() { const w = els.viewer.clientWidth; totalPages = Math.round(els.content.scrollWidth / w) || 1; }
     function updateProgressUI() { els.pageNum.textContent = `${currentPage + 1} / ${totalPages}`; els.progress.style.width = `${(currentPage / (totalPages - 1 || 1)) * 100}%`; }
     async function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; await saveBookToDB(myBooks[i]); } }
 
-    // --- 스크롤 및 터치 제어 ---
     let touchStartX = 0, touchStartY = 0, isLongPress = false, isViewerSwiping = false;
 
     els.viewer.addEventListener('touchstart', e => {
@@ -618,8 +531,7 @@
         let newPage = currentPage + direction;
         if(newPage < 0) newPage = 0; if(newPage >= totalPages) newPage = totalPages - 1;
         if(newPage !== currentPage) {
-            currentPage = newPage;
-            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
+            currentPage = newPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
             playPaperSound(); saveProgress(); updateProgressUI();
         }
     }
@@ -629,62 +541,29 @@
         if (input !== null) {
             const pageNum = parseInt(input, 10);
             if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
-                currentPage = pageNum - 1;
-                els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' });
-                saveProgress(); updateProgressUI();
+                currentPage = pageNum - 1; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); saveProgress(); updateProgressUI();
             } else alert("올바른 페이지 번호를 입력해주세요.");
         }
     }
 
-    // ---[추가] 하단 진행바 터치/슬라이드 페이지 이동 제어 ---
     let isDraggingProgress = false;
-
     function handleProgressDrag(e) {
         const rect = els.progressHitbox.getBoundingClientRect();
         let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        let x = clientX - rect.left;
-        if (x < 0) x = 0;
-        if (x > rect.width) x = rect.width;
-        
+        let x = clientX - rect.left; if (x < 0) x = 0; if (x > rect.width) x = rect.width;
         let targetPage = Math.floor((x / rect.width) * totalPages);
-        if (targetPage >= totalPages) targetPage = totalPages - 1;
-        if (targetPage < 0) targetPage = 0;
-        
-        if (currentPage !== targetPage) {
-            currentPage = targetPage;
-            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' });
-            updateProgressUI();
-        }
+        if (targetPage >= totalPages) targetPage = totalPages - 1; if (targetPage < 0) targetPage = 0;
+        if (currentPage !== targetPage) { currentPage = targetPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); updateProgressUI(); }
     }
-
-    els.progressHitbox.addEventListener('touchstart', e => {
-        e.stopPropagation(); isDraggingProgress = true;
-        els.progress.style.transition = 'none'; // 드래그 중 빠른 반응
-        handleProgressDrag(e);
-    }, {passive: false});
-
-    els.progressHitbox.addEventListener('touchmove', e => {
-        if (isDraggingProgress) { e.preventDefault(); e.stopPropagation(); handleProgressDrag(e); }
-    }, {passive: false});
-
-    els.progressHitbox.addEventListener('touchend', e => {
-        e.stopPropagation();
-        if (isDraggingProgress) {
-            isDraggingProgress = false;
-            els.progress.style.transition = 'width 0.1s linear';
-            playPaperSound(); saveProgress();
-        }
-    });
-
+    els.progressHitbox.addEventListener('touchstart', e => { e.stopPropagation(); isDraggingProgress = true; els.progress.style.transition = 'none'; handleProgressDrag(e); }, {passive: false});
+    els.progressHitbox.addEventListener('touchmove', e => { if (isDraggingProgress) { e.preventDefault(); e.stopPropagation(); handleProgressDrag(e); } }, {passive: false});
+    els.progressHitbox.addEventListener('touchend', e => { e.stopPropagation(); if (isDraggingProgress) { isDraggingProgress = false; els.progress.style.transition = 'width 0.1s linear'; playPaperSound(); saveProgress(); } });
     els.progressHitbox.addEventListener('mousedown', e => { e.stopPropagation(); isDraggingProgress = true; handleProgressDrag(e); });
     document.addEventListener('mousemove', e => { if (isDraggingProgress) { e.preventDefault(); handleProgressDrag(e); } }, {passive: false});
     document.addEventListener('mouseup', e => { if (isDraggingProgress) { isDraggingProgress = false; playPaperSound(); saveProgress(); } });
 
     document.getElementById('main-header').addEventListener('touchstart', e => e.stopPropagation());
-    document.getElementById('reader-nav-pill').addEventListener('touchstart', e => {
-        // 알약 내부 빈 공간 터치시 이벤트 전파 방지
-        if (e.target.id !== 'progress-hitbox' && !e.target.closest('#progress-hitbox')) e.stopPropagation();
-    });
+    document.getElementById('reader-nav-pill').addEventListener('touchstart', e => { if (e.target.id !== 'progress-hitbox' && !e.target.closest('#progress-hitbox')) e.stopPropagation(); });
 
     function openSettings() { els.sheetOver.style.display = 'block'; setTimeout(() => els.sheet.classList.add('show'), 10); }
     function closeSettings() { els.sheet.classList.remove('show'); setTimeout(() => els.sheetOver.style.display = 'none', 300); }
@@ -697,6 +576,53 @@
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
+    // --- [마법의 기능] AI 삽화 생성 로직 ---
+    async function generateIllustration() {
+        if(!targetParagraph) return;
+        const idx = parseInt(targetParagraph.dataset.idx);
+        const book = myBooks.find(b => b.id === currentBookId);
+        hideContextMenu();
+
+        if(!book.illustrations) book.illustrations = {};
+        if(book.illustrations[idx]) return alert("이미 이 문단에 삽화가 있습니다.");
+
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'illust-container loading';
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.05); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 AI가 장면을 그리고 있습니다...</div>`;
+        targetParagraph.after(loadingDiv);
+
+        setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
+
+        // [핵심] 일본 애니메이션 풍 (리제로, 귀멸의 칼날, 장송의 프리렌) 고퀄리티 프롬프트
+        const text = targetParagraph.textContent.trim().substring(0, 150);
+        const prompt = text + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, detailed background, similar to Re:Zero or Demon Slayer or Frieren, cel shading, official art";
+        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}`;
+
+        const img = new Image();
+        img.onload = async () => {
+            loadingDiv.remove();
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'illust-container';
+            imgContainer.innerHTML = `<img src="${imgUrl}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
+            targetParagraph.after(imgContainer);
+            
+            book.illustrations[idx] = imgUrl;
+            await saveBookToDB(book);
+            calculatePages();
+        };
+        img.onerror = () => { loadingDiv.remove(); alert("삽화 생성에 실패했습니다."); calculatePages(); };
+        img.src = imgUrl;
+    }
+
+    async function deleteIllustration(idx, btnEl, event) {
+        event.stopPropagation();
+        if(!confirm("이 삽화를 지우시겠습니까?")) return;
+        const book = myBooks.find(b => b.id === currentBookId);
+        if(book && book.illustrations) { delete book.illustrations[idx]; await saveBookToDB(book); }
+        btnEl.closest('.illust-container').remove();
+        calculatePages();
+    }
+
     async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
@@ -704,16 +630,10 @@
         else { targetParagraph.classList.add('highlight'); if(!book.highlights.includes(idx)) book.highlights.push(idx); }
         await saveBookToDB(book); hideContextMenu();
     }
-    function copyTargetText() { 
-        if(targetParagraph) { navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); }
-        hideContextMenu(); 
-    }
+    function copyTargetText() { if(targetParagraph) { navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); } hideContextMenu(); }
 
-    // --- TTS 로직 ---
     function initVoices() {
-        const voices = speechSynthesis.getVoices();
-        const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
-
+        const voices = speechSynthesis.getVoices(); const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
         if (koVoices.length > 0) {
             let bestVoice = koVoices.find(v => v.default);
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.toLowerCase().includes('samsung'));
@@ -726,8 +646,7 @@
     if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoices; else initVoices();
 
     if ('mediaSession' in navigator) {
-        navigator.mediaSession.setActionHandler('play', pauseResumeTts);
-        navigator.mediaSession.setActionHandler('pause', pauseResumeTts);
+        navigator.mediaSession.setActionHandler('play', pauseResumeTts); navigator.mediaSession.setActionHandler('pause', pauseResumeTts);
     }
     function updateMediaSession() {
         const book = myBooks.find(b => b.id === currentBookId);
@@ -738,49 +657,30 @@
         if (!paragraphsToSpeak.length) return; 
         document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
         isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
-        
-        let targetIdx = 0;
-        for(let i=0; i<paragraphsToSpeak.length; i++) {
-            if(Math.floor(paragraphsToSpeak[i].offsetLeft / els.viewer.clientWidth) === currentPage) { targetIdx = i; break; }
-        }
+        let targetIdx = 0; for(let i=0; i<paragraphsToSpeak.length; i++) { if(Math.floor(paragraphsToSpeak[i].offsetLeft / els.viewer.clientWidth) === currentPage) { targetIdx = i; break; } }
         currentSpeakingIndex = targetIdx; ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
-    
     function startTtsAtParagraph(targetP) { 
         stopTts(); document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
         isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
         currentSpeakingIndex = paragraphsToSpeak.indexOf(targetP); ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
-    
-    function showTtsControls() {
-        els.titleTop.style.opacity = 0; els.ttsControls.classList.add('active');
-        els.ttsPauseBtn.innerHTML = svgPause; els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
-    }
-
+    function showTtsControls() { els.titleTop.style.opacity = 0; els.ttsControls.classList.add('active'); els.ttsPauseBtn.innerHTML = svgPause; els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`; }
     function pauseResumeTts() {
         if(isTtsPaused) { speechSynthesis.resume(); isTtsPaused = false; els.ttsPauseBtn.innerHTML = svgPause; document.getElementById('silentAudio').play().catch(()=>{}); } 
         else { speechSynthesis.pause(); isTtsPaused = true; els.ttsPauseBtn.innerHTML = svgPlay; document.getElementById('silentAudio').pause(); }
     }
-
     function stopTts() { 
         speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false; lastCharIndex = 0;
-        paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); 
-        els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
+        paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
     }
-    
     function toggleTtsSpeed() {
-        currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length;
-        els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
+        currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length; els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
         if (isTtsSpeaking && !isTtsPaused) { isManualRestart = true; speechSynthesis.cancel(); setTimeout(() => speakNext(true), 50); }
     }
-    
     function syncTtsPage() {
-        if (currentPage !== ttsCurrentPage && isTtsSpeaking) {
-            currentPage = ttsCurrentPage;
-            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI();
-        }
+        if (currentPage !== ttsCurrentPage && isTtsSpeaking) { currentPage = ttsCurrentPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI(); }
     }
-    
     function speakNext(isReplay = false) {
         if (!isTtsSpeaking) return;
         if (!isReplay && currentSpeakingIndex >= paragraphsToSpeak.length) return stopTts();
@@ -791,11 +691,7 @@
         
         const startPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
         if (currentPage === ttsCurrentPage || isManualRestart) {
-            if(startPage !== currentPage) {
-                currentPage = startPage;
-                els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
-                updateProgressUI(); saveProgress();
-            }
+            if(startPage !== currentPage) { currentPage = startPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI(); saveProgress(); }
         }
         ttsCurrentPage = startPage;
 
@@ -804,37 +700,19 @@
         ttsUtterance.rate = speedOptions[currentSpeedIndex];
         
         ttsUtterance.onboundary = (e) => {
-            if (e.charIndex === undefined) return;
-            lastCharIndex = e.charIndex;
-
-            let textNode = null;
-            for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim().length > 0) { textNode = p.childNodes[i]; break; } }
+            if (e.charIndex === undefined) return; lastCharIndex = e.charIndex;
+            let textNode = null; for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim().length > 0) { textNode = p.childNodes[i]; break; } }
             if (!textNode) return;
-
             try {
-                const range = document.createRange();
-                const start = Math.min(e.charIndex, textNode.length - 1);
-                let len = e.charLength || 1;
-                if (!e.charLength) {
-                    const remaining = textNode.textContent.substring(start);
-                    const spaceIdx = remaining.indexOf(' ');
-                    len = spaceIdx > -1 ? spaceIdx : 1;
-                }
-                const end = Math.min(start + Math.max(len, 1), textNode.length);
-                if (start >= end) return;
-                
+                const range = document.createRange(); const start = Math.min(e.charIndex, textNode.length - 1);
+                let len = e.charLength || 1; if (!e.charLength) { const remaining = textNode.textContent.substring(start); const spaceIdx = remaining.indexOf(' '); len = spaceIdx > -1 ? spaceIdx : 1; }
+                const end = Math.min(start + Math.max(len, 1), textNode.length); if (start >= end) return;
                 range.setStart(textNode, start); range.setEnd(textNode, end);
-                const rects = range.getClientRects();
-                if (!rects || rects.length === 0) return;
-                
+                const rects = range.getClientRects(); if (!rects || rects.length === 0) return;
                 const absoluteLeft = els.viewer.scrollLeft + (rects[0].left - els.viewer.getBoundingClientRect().left);
                 const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
-
                 if (wordPage >= 0 && wordPage < totalPages) {
-                    if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) {
-                        currentPage = wordPage;
-                        els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI();
-                    }
+                    if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) { currentPage = wordPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI(); }
                     ttsCurrentPage = wordPage;
                 }
             } catch(err) {}
@@ -845,72 +723,43 @@
         speechSynthesis.speak(ttsUtterance);
     }
 
-    // --- 환경 설정 영구 저장 로직 ---
     function changeFontSize(delta) {
-        const oldTotalPages = totalPages;
-        const oldCurrentPage = currentPage;
-        
+        const oldTotalPages = totalPages; const oldCurrentPage = currentPage;
         fontSize = Math.max(12, Math.min(30, fontSize + delta));
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
-        
-        savedSettings.fontSize = fontSize;
-        try { localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings)); } catch(e) {}
+        savedSettings.fontSize = fontSize; try { localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings)); } catch(e) {}
 
         setTimeout(() => {
             calculatePages();
             if (isTtsSpeaking && currentSpeakingIndex >= 0) {
-                const p = paragraphsToSpeak[currentSpeakingIndex];
-                let textNode = null;
+                const p = paragraphsToSpeak[currentSpeakingIndex]; let textNode = null;
                 for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim().length > 0) { textNode = p.childNodes[i]; break; } }
-                
                 if (textNode) {
                     try {
-                        const range = document.createRange();
-                        const start = Math.min(lastCharIndex, textNode.length - 1);
+                        const range = document.createRange(); const start = Math.min(lastCharIndex, textNode.length - 1);
                         range.setStart(textNode, start); range.setEnd(textNode, Math.min(start + 1, textNode.length));
                         const rects = range.getClientRects();
-                        if (rects && rects.length > 0) {
-                            const absoluteLeft = els.viewer.scrollLeft + (rects[0].left - els.viewer.getBoundingClientRect().left);
-                            currentPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
-                        } else currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
+                        if (rects && rects.length > 0) { const absoluteLeft = els.viewer.scrollLeft + (rects[0].left - els.viewer.getBoundingClientRect().left); currentPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth); } 
+                        else currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
                     } catch(e) { currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth); }
                 } else currentPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
                 ttsCurrentPage = currentPage;
-            } else {
-                currentPage = Math.round((oldCurrentPage / (oldTotalPages - 1 || 1)) * (totalPages - 1 || 1));
-            }
+            } else { currentPage = Math.round((oldCurrentPage / (oldTotalPages - 1 || 1)) * (totalPages - 1 || 1)); }
             
-            if (currentPage < 0) currentPage = 0;
-            if (currentPage >= totalPages) currentPage = totalPages - 1;
-            
-            els.viewer.style.scrollBehavior = 'auto'; 
-            els.viewer.scrollLeft = currentPage * els.viewer.clientWidth;
-            els.viewer.style.scrollBehavior = 'smooth'; 
-            updateProgressUI(); saveProgress();
+            if (currentPage < 0) currentPage = 0; if (currentPage >= totalPages) currentPage = totalPages - 1;
+            els.viewer.style.scrollBehavior = 'auto'; els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; els.viewer.style.scrollBehavior = 'smooth'; updateProgressUI(); saveProgress();
         }, 150);
     }
 
     function setTheme(theme, btnEl, isInit = false) {
         document.body.className = `theme-${theme}`; 
-        document.querySelectorAll('.color-circle').forEach(el => {
-            el.classList.remove('active');
-            if(el.dataset.theme === theme) el.classList.add('active');
-        });
-        
-        if (!isInit) {
-            savedSettings.theme = theme;
-            try { localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings)); } catch(e) {}
-        }
+        document.querySelectorAll('.color-circle').forEach(el => { el.classList.remove('active'); if(el.dataset.theme === theme) el.classList.add('active'); });
+        if (!isInit) { savedSettings.theme = theme; try { localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings)); } catch(e) {} }
     }
 
     window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
 
-    // PWA 서비스 워커 등록
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err));
-        });
-    }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err)); }); }
 </script>
 </body>
 </html>
