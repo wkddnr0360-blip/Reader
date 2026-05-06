@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader (Millie Clone)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA 및 앱 아이콘 설정 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
-    <!-- 아이폰에서 앱 아이콘이 예쁘게 보이게 하려면 아래 줄 필수 -->
     <link rel="apple-touch-icon" href="icon-512.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         /* --- 테마 및 기본 리셋 --- */
         :root { 
@@ -82,9 +85,8 @@
         textarea { flex: 1; min-height: 200px; resize: none; }
         .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
 
-        /* --- 독서 화면 (내용) --- */
+        /* --- 독서 화면 --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
-        
         #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; }
 
         #book-content { 
@@ -93,20 +95,14 @@
         }
         @media (min-width: 500px) { #book-content { column-width: 460px; } }
         
-        /* 웹소설 포맷팅 */
         #book-content p { 
-            font-family: 'Gowun Batang', serif !important; 
-            font-size: var(--font-size); 
-            line-height: 1.95; letter-spacing: -0.5px; 
-            color: var(--text-color); text-align: justify; word-break: keep-all;
-            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; 
-            transition: background 0.2s; user-select: none;
+            font-family: 'Gowun Batang', serif !important; font-size: var(--font-size); 
+            line-height: 1.95; letter-spacing: -0.5px; color: var(--text-color); text-align: justify; word-break: keep-all;
+            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; user-select: none;
             padding: 4px 8px; border-radius: 12px; 
         }
         #book-content p.dialogue { text-indent: 0 !important; }
         #book-content p.empty-line { margin-bottom: 0; height: 1em; padding: 0; }
-        
-        /* 꾹 누르기 & 읽기 피드백 */
         #book-content p.focused { background-color: rgba(0,0,0,0.04); transform: scale(0.98); }
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
@@ -133,14 +129,11 @@
         }
         .nav-progress-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(0,0,0,0.05); }
         #nav-progress-fill { width: 0%; height: 100%; background: #333; transition: width 0.3s ease-out; border-radius: 0 2px 2px 0; }
-        
         .icon-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; transition: background 0.2s; }
         .icon-btn:active { background: rgba(0,0,0,0.05); }
-        
         .page-count { font-size: 13px; font-weight: 600; opacity: 0.7; letter-spacing: 1px; cursor: pointer; padding: 8px 12px; border-radius: 12px;}
         .page-count:active { background: rgba(0,0,0,0.05); }
 
-        /* 화면 중앙 터치 시 숨김 처리 */
         .hud-hidden header { transform: translateY(-100%); opacity: 0; }
         .hud-hidden #reader-nav-pill { transform: translate(-50%, 150%); opacity: 0; pointer-events: none !important; }
         
@@ -152,13 +145,13 @@
             transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 211;
         }
         #settings-sheet.show { transform: translateY(0); }
-        .setting-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; opacity: 0.5; }
-        .color-palette { display: flex; gap: 14px; margin-bottom: 28px;}
+        .setting-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; opacity: 0.5; margin-top: 10px; }
+        .color-palette { display: flex; gap: 14px; margin-bottom: 16px;}
         .color-circle { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;}
         .color-circle:active { transform: scale(0.9); }
         .color-circle.active::after { content: '✓'; color: inherit; font-size: 18px; opacity: 0.6; }
-        .font-control { display: flex; background: rgba(128,128,128,0.1); border-radius: 16px; overflow: hidden; }
-        .font-btn { flex: 1; padding: 16px; background: none; border: none; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--ui-text); }
+        .font-control { display: flex; background: rgba(128,128,128,0.1); border-radius: 16px; overflow: hidden; margin-bottom: 16px;}
+        .font-btn { flex: 1; padding: 14px; background: none; border: none; font-size: 15px; font-weight: 600; cursor: pointer; color: var(--ui-text); }
         .font-btn:active { background: rgba(0,0,0,0.05); }
         .font-btn:first-child { border-right: 1px solid rgba(128,128,128,0.2); }
 
@@ -168,7 +161,6 @@
         .theme-green { --bg-color: #e3eadc; --text-color: #333; --ui-bg: #e3eadc; --ui-text: #333; }
         .theme-gray  { --bg-color: #4a4a4a; --text-color: #e0e0e0; --ui-bg: #333333; --ui-text: #e0e0e0; --ui-border: rgba(255,255,255,0.1); --highlight-color: rgba(135, 206, 235, 0.3); --speaking-color: rgba(255, 255, 255, 0.2);}
         .theme-black { --bg-color: #121212; --text-color: #c6c6c6; --ui-bg: #1c1c1c; --ui-text: #e0e0e0; --ui-border: rgba(255,255,255,0.1); --highlight-color: rgba(135, 206, 235, 0.25); --speaking-color: rgba(255, 255, 255, 0.15);}
-        
         .theme-black #reader-nav-pill, .theme-gray #reader-nav-pill { background: rgba(40,40,40,0.85); border-color: rgba(255,255,255,0.1); color: #fff;}
         .theme-black #nav-progress-fill, .theme-gray #nav-progress-fill { background: #fff; }
         .theme-black #tts-header-controls, .theme-gray #tts-header-controls { background: rgba(40,40,40,0.9); border-color: rgba(255,255,255,0.1); }
@@ -177,6 +169,7 @@
     </style>
 </head>
 <body class="theme-white">
+    <!-- 백그라운드 오디오 유지 트릭 -->
     <audio id="silentAudio" loop src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" preload="auto"></audio>
     <input type="file" id="cover-upload" accept="image/*" style="display:none;">
 
@@ -188,6 +181,7 @@
         
         <h1 id="top-title">서재</h1>
         
+        <!-- 헤더 통합 TTS 플레이어 -->
         <div id="tts-header-controls">
             <button class="tts-ctrl-btn tts-speed-btn" onclick="toggleTtsSpeed()" id="tts-speed-btn">1.0x</button>
             <button class="tts-ctrl-btn" onclick="syncTtsPage()" title="현재 읽는 위치로 이동">
@@ -206,7 +200,7 @@
         <button class="add-fab" onclick="showInputScreen()">+</button>
     </div>
 
-    <!-- 메뉴 (수정하기 추가) -->
+    <!-- 메뉴 (수정 기능 포함) -->
     <div id="shelf-menu-overlay" onclick="closeShelfMenu()">
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 텍스트/제목 수정</div>
@@ -216,12 +210,14 @@
         </div>
     </div>
 
+    <!-- 텍스트 입력 및 수정 뷰 -->
     <div id="view-input">
         <input type="text" id="book-title" placeholder="소설 제목">
         <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수천 편의 소설도 저장 가능합니다)"></textarea>
         <button class="start-btn" id="btn-save-read" onclick="saveAndRead()">저장하고 읽기</button>
     </div>
 
+    <!-- 독서 화면 뷰 -->
     <div id="view-reader">
         <div id="context-popup">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
@@ -241,6 +237,7 @@
         </footer>
     </div>
 
+    <!-- 설정 및 데이터 백업 시트 -->
     <div id="sheet-overlay" onclick="closeSettings()"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
@@ -256,20 +253,17 @@
             <button class="font-btn" onclick="changeFontSize(-1)">가 -</button>
             <button class="font-btn" onclick="changeFontSize(1)">가 +</button>
         </div>
+        <div class="setting-title">데이터 클라우드 백업 / 복구 (구글드라이브 등 저장)</div>
+        <div class="font-control">
+            <button class="font-btn" onclick="exportData()">💾 백업 파일 다운</button>
+            <button class="font-btn" onclick="document.getElementById('import-file').click()">📂 파일 불러오기</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <script>
-    // 서비스 워커(앱 설치 기능) 등록
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/Reader/sw.js')
-            .then(registration => console.log('앱 설치 기능(SW) 활성화 성공!'))
-            .catch(err => console.log('SW 등록 실패:', err));
-    });
-}
-    
-    // --- [저장소 업그레이드] IndexedDB 설정 (수천 개 대용량 소설 저장 지원) ---
+    // --- [용량 무제한 IndexedDB] 설정 (수천 개 대용량 소설 저장) ---
     const DB_NAME = 'PacemakerDB';
     const STORE_NAME = 'books';
     let db;
@@ -292,7 +286,7 @@ if ('serviceWorker' in navigator) {
         return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(id); tx.oncomplete = resolve; });
     }
     async function loadAllBooks() {
-        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result || []); });
+        return new Promise(resolve => { const tx = db.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result ||[]); });
     }
 
     let myBooks =[];
@@ -325,7 +319,7 @@ if ('serviceWorker' in navigator) {
 
     document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
 
-    // 앱 초기화 (IndexedDB 연동)
+    // 앱 초기화 
     window.onload = async () => {
         try {
             await initDB();
@@ -333,7 +327,7 @@ if ('serviceWorker' in navigator) {
             myBooks.sort((a,b) => b.id - a.id); // 최신순 정렬
             showBookshelf();
         } catch (e) {
-            alert("데이터베이스 초기화에 실패했습니다. 프라이빗 모드인지 확인해주세요.");
+            alert("데이터베이스 초기화에 실패했습니다. 시크릿 모드인지 확인해주세요.");
         }
     };
 
@@ -370,7 +364,7 @@ if ('serviceWorker' in navigator) {
 
     function closeShelfMenu() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
     
-    // [신규] 소설 수정 기능
+    // 소설 내용 수정 기능
     function editSelectedBook() {
         const book = myBooks.find(b => b.id === selectedShelfBookId);
         closeShelfMenu();
@@ -407,9 +401,8 @@ if ('serviceWorker' in navigator) {
 
     function showBookshelf() {
         if(isTtsSpeaking) stopTts();
-        editingBookId = null; // 수정 모드 초기화
+        editingBookId = null; 
         els.btnStart.textContent = "저장하고 읽기";
-        
         els.app.classList.remove('hud-hidden');
         els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
         els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none';
@@ -427,23 +420,54 @@ if ('serviceWorker' in navigator) {
         if (!text) return alert("내용을 입력해주세요!");
         
         if (editingBookId) {
-            // 기존 소설 수정 (IndexedDB 업데이트)
             const bookIndex = myBooks.findIndex(b => b.id === editingBookId);
             if(bookIndex > -1) {
-                myBooks[bookIndex].title = title;
-                myBooks[bookIndex].text = text;
-                await saveBookToDB(myBooks[bookIndex]);
-                openBook(editingBookId);
+                myBooks[bookIndex].title = title; myBooks[bookIndex].text = text;
+                await saveBookToDB(myBooks[bookIndex]); openBook(editingBookId);
             }
-            editingBookId = null;
-            els.btnStart.textContent = "저장하고 읽기";
+            editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
         } else {
-            // 새 소설 추가
             const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[] };
-            myBooks.unshift(newBook); 
-            await saveBookToDB(newBook);
-            openBook(newBook.id);
+            myBooks.unshift(newBook); await saveBookToDB(newBook); openBook(newBook.id);
         }
+    }
+
+    // --- 데이터 백업 및 복구 로직 ---
+    async function exportData() {
+        try {
+            const allBooks = await loadAllBooks();
+            if (allBooks.length === 0) return alert("백업할 소설이 없습니다.");
+            const dataStr = JSON.stringify(allBooks);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pacemaker_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            closeSettings();
+        } catch (e) { alert("백업 중 오류가 발생했습니다."); }
+    }
+
+    async function importData(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const importedBooks = JSON.parse(e.target.result);
+                if(!Array.isArray(importedBooks)) throw new Error("Invalid Format");
+                let count = 0;
+                for (const book of importedBooks) {
+                    if(book.id && book.title && book.text) { await saveBookToDB(book); count++; }
+                }
+                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`);
+                myBooks = await loadAllBooks();
+                myBooks.sort((a,b) => b.id - a.id);
+                renderBookshelf(); closeSettings();
+            } catch(err) { alert("올바른 백업 파일이 아닙니다."); }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // 초기화
     }
 
     // --- 독서 (자동 포맷팅) ---
@@ -582,15 +606,10 @@ if ('serviceWorker' in navigator) {
         const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
 
         if (koVoices.length > 0) {
-            // 1순위: MS Edge 브라우저의 Azure 인공지능 신경망 목소리 (압도적 1위)
             let bestVoice = koVoices.find(v => v.name.includes('Online (Natural)'));
-            // 2순위: 애플 iOS / Mac 프리미엄 목소리
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Premium'));
-            // 3순위: 삼성/구글 향상된 목소리
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Yuna') || v.name.includes('SunHi') || v.name.includes('InJoon'));
-            // 4순위: 기본 목소리
             if (!bestVoice) bestVoice = koVoices[0];
-            
             selectedVoice = bestVoice;
         }
     }
@@ -741,6 +760,16 @@ if ('serviceWorker' in navigator) {
     }
 
     window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
+
+    // [중요] PWA 서비스 워커 등록 (경로 꼬임 방지를 위해 상대 경로 ./sw.js 사용)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => console.log('앱 설치 기능(SW) 활성화 성공!'))
+                .catch(err => console.log('SW 등록 실패:', err));
+        });
+    }
+
 </script>
 </body>
 </html>
