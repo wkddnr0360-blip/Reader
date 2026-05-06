@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pacemaker Reader (Millie Clone)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 테마 및 기본 리셋 --- */
+        :root { 
+            --bg-color: #ffffff; --text-color: #333333; --ui-bg: #ffffff; --ui-text: #333333; --ui-border: rgba(0,0,0,0.05); 
+            --font-size: 18px; 
+            --highlight-color: rgba(135, 206, 235, 0.4);
+            --speaking-color: rgba(255, 235, 59, 0.6);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+        
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; }
+        #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+
+        /* --- 상단 헤더 --- */
+        header { 
+            width: 100%; height: 56px; border-bottom: 1px solid var(--ui-border); 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--ui-bg); color: var(--ui-text);
+            flex-shrink: 0; z-index: 100; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative;
+        }
+        .header-btn { background: none; border: none; cursor: pointer; color: inherit; width: 40px; text-align: left; display: flex; align-items: center; }
+        header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
+        .header-right { width: 40px; }
+
+        /* --- [개편] 헤더 통합 TTS 컨트롤러 --- */
+        #tts-header-controls { 
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
+            display: flex; align-items: center; gap: 6px; 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 6px 12px; border-radius: 20px; 
+            pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); z-index: 10;
+        }
+        #tts-header-controls.active { opacity: 1; pointer-events: auto; }
+        
+        .tts-ctrl-btn { 
+            width: 32px; height: 32px; border-radius: 16px; 
+            background: #f0f0f0; color: #333; border: none; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .tts-ctrl-btn:active { transform: scale(0.9); background: #e0e0e0; }
+        .tts-ctrl-btn svg { width: 14px; height: 14px; }
+        .tts-speed-btn { width: 42px; background: transparent; border: 1px solid #ddd; font-size: 12px;}
+
+        /* --- 서재 화면 --- */
+        #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: auto;}
+        #book-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; }
+        .book-card { display: flex; flex-direction: column; cursor: pointer; user-select: none; }
+        .book-cover { 
+            aspect-ratio: 1 / 1.45; border-radius: 6px 12px 12px 6px; box-shadow: 2px 4px 12px rgba(0,0,0,0.08); 
+            background-color: #ddd; background-size: cover; background-position: center; transition: transform 0.1s;
+        }
+        .book-card:active .book-cover { transform: scale(0.95); }
+        .book-info { margin-top: 10px; }
+        .book-info h3 { font-size: 13px; font-weight: 500; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+        .book-info p { font-size: 11px; color: #888; margin-top: 4px; }
+        
+        .add-fab { position: fixed; bottom: 40px; right: 50%; transform: translateX(200px); width: 56px; height: 56px; border-radius: 28px; background: #333; color: white; font-size: 28px; border: none; box-shadow: 0 6px 16px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;}
+        @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } }
+
+        #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
+        #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .menu-item { padding: 16px 20px; font-size: 15px; font-weight: 500; border-bottom: 1px solid #f0f0f0; cursor: pointer; color: #333; }
+        .menu-item:active { background: #f5f5f5; }
+        .menu-item.danger { color: #ff3b30; border-bottom: none; }
+
+        /* --- 입력 화면 --- */
+        #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
+        input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
+        textarea { flex: 1; min-height: 200px; resize: none; }
+        .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
+
+        /* --- 독서 화면 (내용) --- */
+        #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
+        
+        #viewer-container { 
+            flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex;
+        }
+
+        #book-content { 
+            height: 100%; padding: 30px 20px; box-sizing: border-box;
+            column-width: calc(100vw - 40px); column-gap: 40px; column-fill: auto;
+        }
+        @media (min-width: 500px) { #book-content { column-width: 460px; } }
+        
+        /* 웹소설 포맷팅 */
+        #book-content p { 
+            font-family: 'Gowun Batang', serif !important; 
+            font-size: var(--font-size); 
+            line-height: 1.95; letter-spacing: -0.5px; 
+            color: var(--text-color); text-align: justify; word-break: keep-all;
+            margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; 
+            transition: background 0.2s; user-select: none;
+            padding: 4px 8px; border-radius: 12px; 
+        }
+        #book-content p.dialogue { text-indent: 0 !important; }
+        #book-content p.empty-line { margin-bottom: 0; height: 1em; padding: 0; }
+        
+        /* 꾹 누르기 & 읽기 피드백 */
+        #book-content p.focused { background-color: rgba(0,0,0,0.04); transform: scale(0.98); }
+        #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
+        #book-content p.highlight { background-color: var(--highlight-color) !important; }
+
+        /* 문단 팝업 메뉴 */
+        #context-popup {
+            position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; 
+            border-radius: 16px; display: none; z-index: 150; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.05); flex-direction: row; overflow: hidden;
+        }
+        .ctx-item { padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; border-right: 1px solid rgba(0,0,0,0.05); }
+        .ctx-item:active { background: rgba(0,0,0,0.05); }
+        .ctx-item:last-child { border-right: none; }
+
+        /* --- 하단 네비게이션 알약 --- */
+        #reader-nav-pill { 
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+            width: calc(100% - 40px); max-width: 400px; height: 60px; 
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 30px; display: flex; align-items: center; justify-content: space-between; 
+            padding: 0 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.4);
+            z-index: 100; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            color: #333; overflow: hidden;
+        }
+        .nav-progress-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(0,0,0,0.05); }
+        #nav-progress-fill { width: 0%; height: 100%; background: #333; transition: width 0.3s ease-out; border-radius: 0 2px 2px 0; }
+        
+        .icon-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; transition: background 0.2s; }
+        .icon-btn:active { background: rgba(0,0,0,0.05); }
+        
+        .page-count { font-size: 13px; font-weight: 600; opacity: 0.7; letter-spacing: 1px; cursor: pointer; padding: 8px 12px; border-radius: 12px;}
+        .page-count:active { background: rgba(0,0,0,0.05); }
+
+        /* 화면 중앙 터치 시 숨김 처리 */
+        .hud-hidden header { transform: translateY(-100%); opacity: 0; }
+        .hud-hidden #reader-nav-pill { transform: translate(-50%, 150%); opacity: 0; pointer-events: none !important; }
+        
+        /* 설정 시트 */
+        #sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 210; display: none; backdrop-filter: blur(2px);}
+        #settings-sheet { 
+            position: absolute; bottom: 0; left: 0; width: 100%; background: var(--ui-bg); color: var(--ui-text);
+            border-radius: 24px 24px 0 0; padding: 28px 24px 36px; box-shadow: 0 -4px 30px rgba(0,0,0,0.15);
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); z-index: 211;
+        }
+        #settings-sheet.show { transform: translateY(0); }
+        .setting-title { font-size: 13px; font-weight: 600; margin-bottom: 14px; opacity: 0.5; }
+        .color-palette { display: flex; gap: 14px; margin-bottom: 28px;}
+        .color-circle { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;}
+        .color-circle:active { transform: scale(0.9); }
+        .color-circle.active::after { content: '✓'; color: inherit; font-size: 18px; opacity: 0.6; }
+        .font-control { display: flex; background: rgba(128,128,128,0.1); border-radius: 16px; overflow: hidden; }
+        .font-btn { flex: 1; padding: 16px; background: none; border: none; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--ui-text); }
+        .font-btn:active { background: rgba(0,0,0,0.05); }
+        .font-btn:first-child { border-right: 1px solid rgba(128,128,128,0.2); }
+
+        /* 다크모드 대응 */
+        .theme-white { --bg-color: #ffffff; --text-color: #333; --ui-bg: #ffffff; --ui-text: #333; }
+        .theme-cream { --bg-color: #fcf9ea; --text-color: #333; --ui-bg: #fcf9ea; --ui-text: #333; }
+        .theme-green { --bg-color: #e3eadc; --text-color: #333; --ui-bg: #e3eadc; --ui-text: #333; }
+        .theme-gray  { --bg-color: #4a4a4a; --text-color: #e0e0e0; --ui-bg: #333333; --ui-text: #e0e0e0; --ui-border: rgba(255,255,255,0.1); --highlight-color: rgba(135, 206, 235, 0.3); --speaking-color: rgba(255, 255, 255, 0.2);}
+        .theme-black { --bg-color: #121212; --text-color: #c6c6c6; --ui-bg: #1c1c1c; --ui-text: #e0e0e0; --ui-border: rgba(255,255,255,0.1); --highlight-color: rgba(135, 206, 235, 0.25); --speaking-color: rgba(255, 255, 255, 0.15);}
+        
+        .theme-black #reader-nav-pill, .theme-gray #reader-nav-pill { background: rgba(40,40,40,0.85); border-color: rgba(255,255,255,0.1); color: #fff;}
+        .theme-black #nav-progress-fill, .theme-gray #nav-progress-fill { background: #fff; }
+        .theme-black #tts-header-controls, .theme-gray #tts-header-controls { background: rgba(40,40,40,0.9); border-color: rgba(255,255,255,0.1); }
+        .theme-black .tts-ctrl-btn, .theme-gray .tts-ctrl-btn { background: #555; color: #fff; border-color: #666; }
+        .theme-gray p.focused, .theme-black p.focused { background-color: rgba(255,255,255,0.06) !important; }
+    </style>
+</head>
+<body class="theme-white">
+    <!-- 백그라운드 오디오 유지 트릭 -->
+    <audio id="silentAudio" loop src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" preload="auto"></audio>
+    <input type="file" id="cover-upload" accept="image/*" style="display:none;">
+
+<div id="app">
+    <header id="main-header">
+        <button class="header-btn" onclick="showBookshelf()" id="back-btn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+        </button>
+        
+        <h1 id="top-title">서재</h1>
+        
+        <!-- 헤더 통합 TTS 플레이어 -->
+        <div id="tts-header-controls">
+            <!-- 배속 변경 -->
+            <button class="tts-ctrl-btn tts-speed-btn" onclick="toggleTtsSpeed()" id="tts-speed-btn">1.0x</button>
+            <!-- 읽는 위치로 화면 복귀 동기화 버튼 -->
+            <button class="tts-ctrl-btn" onclick="syncTtsPage()" title="현재 읽는 위치로 이동">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+            </button>
+            <!-- 재생/일시정지 -->
+            <button class="tts-ctrl-btn" onclick="pauseResumeTts()" id="tts-pause-btn"></button>
+            <!-- 정지 -->
+            <button class="tts-ctrl-btn" onclick="stopTts()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+            </button>
+        </div>
+
+        <div class="header-right"></div>
+    </header>
+
+    <div id="view-bookshelf">
+        <div id="book-list"></div>
+        <button class="add-fab" onclick="showInputScreen()">+</button>
+    </div>
+
+    <!-- 메뉴 (로컬 앨범만 유지) -->
+    <div id="shelf-menu-overlay" onclick="closeShelfMenu()">
+        <div id="shelf-menu" onclick="event.stopPropagation()">
+            <div class="menu-item" onclick="triggerLocalCover()">🖼️ 내 앨범에서 표지 선택</div>
+            <div class="menu-item" onclick="resetCover()">🗑️ 표지 초기화</div>
+            <div class="menu-item danger" onclick="deleteSelectedBook()">❌ 이 책 삭제</div>
+        </div>
+    </div>
+
+    <div id="view-input">
+        <input type="text" id="book-title" placeholder="소설 제목">
+        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요."></textarea>
+        <button class="start-btn" onclick="saveAndRead()">저장하고 읽기</button>
+    </div>
+
+    <div id="view-reader">
+        <div id="context-popup">
+            <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
+            <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
+            <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
+        </div>
+        
+        <div id="viewer-container">
+            <div id="book-content"></div>
+        </div>
+        
+        <!-- 하단 네비게이션 알약 -->
+        <footer id="reader-nav-pill">
+            <div class="nav-progress-bg"><div id="nav-progress-fill"></div></div>
+            
+            <button class="icon-btn" onclick="showBookshelf()">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+            </button>
+            
+            <!-- 페이지 점프 기능 -->
+            <div class="page-count" id="pageNumber" onclick="promptPageJump()">1 / 1</div>
+            
+            <div style="display:flex; gap:16px;">
+                <button class="icon-btn" onclick="startTts()">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+                <button class="icon-btn" onclick="openSettings()">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22l-1.92 3.32c-.12.21-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <div id="sheet-overlay" onclick="closeSettings()"></div>
+    <div id="settings-sheet">
+        <div class="setting-title">배경 테마</div>
+        <div class="color-palette">
+            <div class="color-circle active" style="background:#fff; color:#000;" onclick="setTheme('white', this)"></div>
+            <div class="color-circle" style="background:#fcf9ea; color:#000;" onclick="setTheme('cream', this)"></div>
+            <div class="color-circle" style="background:#e3eadc; color:#000;" onclick="setTheme('green', this)"></div>
+            <div class="color-circle" style="background:#4a4a4a; color:#fff;" onclick="setTheme('gray', this)"></div>
+            <div class="color-circle" style="background:#121212; color:#fff;" onclick="setTheme('black', this)"></div>
+        </div>
+        <div class="setting-title">글자 크기</div>
+        <div class="font-control">
+            <button class="font-btn" onclick="changeFontSize(-1)">가 -</button>
+            <button class="font-btn" onclick="changeFontSize(1)">가 +</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let myBooks = JSON.parse(localStorage.getItem('myBooks')) ||[];
+    let currentBookId = null, totalPages = 1, currentPage = 0, fontSize = 18;
+    
+    const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+    const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+    
+    const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0];
+    let currentSpeedIndex = 0;
+
+    let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
+    let ttsCurrentPage = 0; // TTS가 현재 읽고 있는 페이지 추적용
+    let ttsUtterance = null, selectedVoice = null;
+    let paragraphsToSpeak =[], currentSpeakingIndex = -1;
+    
+    let longPressTimer = null, targetParagraph = null, selectedShelfBookId = null;
+
+    const defaultColors =['#6e8efb', '#f6d365', '#84fab0', '#ff0844', '#4facfe', '#9b59b6'];
+
+    const els = {
+        app: document.getElementById('app'), 
+        vShelf: document.getElementById('view-bookshelf'), list: document.getElementById('book-list'),
+        vInput: document.getElementById('view-input'), title: document.getElementById('book-title'), text: document.getElementById('text-input'),
+        vReader: document.getElementById('view-reader'), viewer: document.getElementById('viewer-container'), content: document.getElementById('book-content'),
+        titleTop: document.getElementById('top-title'), btnBack: document.getElementById('back-btn'), header: document.getElementById('main-header'),
+        pageNum: document.getElementById('pageNumber'), progress: document.getElementById('nav-progress-fill'),
+        ctxPopup: document.getElementById('context-popup'), shelfMenu: document.getElementById('shelf-menu-overlay'),
+        sheetOver: document.getElementById('sheet-overlay'), sheet: document.getElementById('settings-sheet'),
+        ttsControls: document.getElementById('tts-header-controls'), ttsPauseBtn: document.getElementById('tts-pause-btn'), ttsSpeedBtn: document.getElementById('tts-speed-btn')
+    };
+
+    document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
+
+    function playPaperSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(150, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+    }
+
+    // --- 서재 ---
+    function renderBookshelf() {
+        els.list.innerHTML = myBooks.length === 0 ? '<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:50px;">+ 버튼을 눌러 소설을 추가해보세요.</p>' : '';
+        myBooks.forEach((book, idx) => {
+            const div = document.createElement('div'); div.className = 'book-card';
+            let bgStyle = book.coverUrl ? `background-image: url('${book.coverUrl}')` : `background-color: ${defaultColors[idx % defaultColors.length]}`;
+            div.innerHTML = `<div class="book-cover" style="${bgStyle}"></div><div class="book-info"><h3>${book.title}</h3><p>${book.currentPage + 1}p 읽는 중</p></div>`;
+            
+            let sx, sy, moved = false, pressTimer = null;
+            div.addEventListener('touchstart', e => { 
+                const touch = e.touches[0]; sx = touch.clientX; sy = touch.clientY; moved = false;
+                pressTimer = setTimeout(() => { moved = true; navigator.vibrate?.(50); selectedShelfBookId = book.id; els.shelfMenu.style.display = 'flex'; }, 500); 
+            }, {passive: true});
+            div.addEventListener('touchmove', e => { const touch = e.touches[0]; if(Math.abs(touch.clientX - sx) > 10 || Math.abs(touch.clientY - sy) > 10) { moved = true; clearTimeout(pressTimer); } }, {passive: true});
+            div.addEventListener('touchend', () => { clearTimeout(pressTimer); if(!moved) openBook(book.id); });
+            div.addEventListener('contextmenu', e => e.preventDefault());
+            els.list.appendChild(div);
+        });
+    }
+
+    function closeShelfMenu() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
+    function triggerLocalCover() { document.getElementById('cover-upload').click(); }
+    document.getElementById('cover-upload').addEventListener('change', function(e) { 
+        const file = e.target.files[0]; if(!file) return; 
+        const targetBookId = selectedShelfBookId; closeShelfMenu(); 
+        const reader = new FileReader(); 
+        reader.onload = function(evt) { 
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                const MAX_WIDTH = 300; const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const b = myBooks.find(x => x.id === targetBookId); 
+                if(b) { b.coverUrl = canvas.toDataURL('image/jpeg', 0.8); localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); }
+            }; img.src = evt.target.result;
+        }; reader.readAsDataURL(file); 
+    });
+    
+    function resetCover() { const id = selectedShelfBookId; closeShelfMenu(); const b = myBooks.find(x => x.id === id); if(b) { delete b.coverUrl; localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); } }
+    function deleteSelectedBook() { const id = selectedShelfBookId; closeShelfMenu(); if(confirm('삭제하시겠습니까?')) { myBooks = myBooks.filter(b => b.id !== id); localStorage.setItem('myBooks', JSON.stringify(myBooks)); renderBookshelf(); } }
+
+    function showBookshelf() {
+        if(isTtsSpeaking) stopTts();
+        els.app.classList.remove('hud-hidden');
+        els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
+        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none';
+        renderBookshelf();
+    }
+
+    function showInputScreen() {
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex';
+        els.titleTop.textContent = "새 소설 추가"; els.btnBack.style.display = 'flex'; els.title.value = ''; els.text.value = '';
+    }
+
+    function saveAndRead() {
+        const title = els.title.value.trim() || '제목 없는 소설'; const text = els.text.value.trim();
+        if (!text) return alert("내용을 입력해주세요!");
+        const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[] };
+        myBooks.unshift(newBook); localStorage.setItem('myBooks', JSON.stringify(myBooks)); openBook(newBook.id);
+    }
+
+    // --- 독서 (자동 포맷팅) ---
+    function openBook(id) {
+        const book = myBooks.find(b => b.id === id); if(!book) return;
+        currentBookId = id; currentPage = book.currentPage || 0;
+        if(!book.highlights) book.highlights =[]; 
+
+        els.content.innerHTML = '';
+        const lines = book.text.split('\n'); let prevEmpty = false;
+        
+        lines.forEach((line, idx) => {
+            const t = line.trim();
+            if(t === '') { 
+                if(!prevEmpty) { const p = document.createElement('p'); p.className = 'empty-line'; p.innerHTML = '&nbsp;'; els.content.appendChild(p); prevEmpty = true; }
+            } 
+            else if (!t.startsWith('/*')) {
+                prevEmpty = false;
+                const p = document.createElement('p'); p.textContent = t; p.dataset.idx = idx;
+                if(/^[“‘"'\u300C\u300E]/.test(t)) p.classList.add('dialogue');
+                if(book.highlights.includes(idx)) p.classList.add('highlight');
+                els.content.appendChild(p);
+            }
+        });
+
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'none'; els.vReader.style.display = 'flex'; 
+        els.titleTop.textContent = book.title; els.btnBack.style.display = 'flex'; 
+        els.app.classList.add('hud-hidden'); 
+
+        paragraphsToSpeak = Array.from(els.content.querySelectorAll('p:not(.empty-line)'));
+        
+        setTimeout(() => {
+            calculatePages();
+            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' });
+            updateProgressUI();
+        }, 100);
+    }
+
+    function calculatePages() { const w = els.viewer.clientWidth; totalPages = Math.round(els.content.scrollWidth / w) || 1; }
+    function updateProgressUI() { els.pageNum.textContent = `${currentPage + 1} / ${totalPages}`; els.progress.style.width = `${(currentPage / (totalPages - 1 || 1)) * 100}%`; }
+    function saveProgress() { const i = myBooks.findIndex(b => b.id === currentBookId); if(i > -1) { myBooks[i].currentPage = currentPage; localStorage.setItem('myBooks', JSON.stringify(myBooks)); } }
+
+    // --- 엄격한 스크롤 & 터치 ---
+    let touchStartX = 0, touchStartY = 0, isLongPress = false, isViewerSwiping = false;
+
+    els.viewer.addEventListener('touchstart', e => {
+        const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; 
+        isLongPress = false; isViewerSwiping = false; hideContextMenu(); closeSettings();
+        
+        if(e.target.tagName === 'P' && !e.target.classList.contains('empty-line')) {
+            targetParagraph = e.target;
+            longPressTimer = setTimeout(() => { 
+                isLongPress = true; navigator.vibrate?.(50); 
+                targetParagraph.classList.add('focused'); showContextMenu(touchStartX, touchStartY); 
+            }, 450); 
+        }
+    }, {passive: true});
+
+    els.viewer.addEventListener('touchmove', e => {
+        const dx = e.touches[0].clientX - touchStartX; const dy = e.touches[0].clientY - touchStartY;
+        if(Math.abs(dx) > 10 || Math.abs(dy) > 10) { clearTimeout(longPressTimer); isViewerSwiping = true; if(targetParagraph) targetParagraph.classList.remove('focused'); }
+    }, {passive: true});
+
+    els.viewer.addEventListener('touchend', e => {
+        clearTimeout(longPressTimer);
+        if(!isLongPress) {
+            if(targetParagraph) targetParagraph.classList.remove('focused');
+            const dx = e.changedTouches[0].clientX - touchStartX; const dy = e.changedTouches[0].clientY - touchStartY;
+            
+            if (isViewerSwiping) {
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { if (dx < 0) turnPage(1); else turnPage(-1); }
+            } else {
+                if(Math.abs(dx) < 10 && Math.abs(dy) < 10 && els.ctxPopup.style.display !== 'flex' && els.sheetOver.style.display !== 'block') {
+                    const clickX = e.changedTouches[0].clientX; const screenW = window.innerWidth;
+                    if (clickX < screenW * 0.25) turnPage(-1); else if (clickX > screenW * 0.75) turnPage(1); 
+                    else els.app.classList.toggle('hud-hidden');
+                }
+            }
+        }
+    });
+
+    function turnPage(direction) {
+        let newPage = currentPage + direction;
+        if(newPage < 0) newPage = 0; if(newPage >= totalPages) newPage = totalPages - 1;
+        if(newPage !== currentPage) {
+            currentPage = newPage;
+            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
+            playPaperSound(); saveProgress(); updateProgressUI();
+            // 페이지 넘길 때는 TTS를 멈추거나 방해하지 않음 (딴짓 기능)
+        }
+    }
+
+    function promptPageJump() {
+        const input = prompt(`이동할 페이지를 입력하세요 (1 ~ ${totalPages})`, currentPage + 1);
+        if (input !== null) {
+            const pageNum = parseInt(input, 10);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                currentPage = pageNum - 1;
+                els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' });
+                saveProgress(); updateProgressUI();
+            } else alert("잘못된 페이지 번호입니다.");
+        }
+    }
+
+    document.getElementById('main-header').addEventListener('touchstart', e => e.stopPropagation());
+    document.getElementById('reader-nav-pill').addEventListener('touchstart', e => e.stopPropagation());
+
+    function openSettings() { els.sheetOver.style.display = 'block'; setTimeout(() => els.sheet.classList.add('show'), 10); }
+    function closeSettings() { els.sheet.classList.remove('show'); setTimeout(() => els.sheetOver.style.display = 'none', 300); }
+
+    function showContextMenu(x, y) {
+        els.ctxPopup.style.display = 'flex';
+        let finalX = Math.max(10, Math.min(x - els.ctxPopup.offsetWidth/2, window.innerWidth - els.ctxPopup.offsetWidth - 10));
+        els.ctxPopup.style.left = finalX + 'px'; els.ctxPopup.style.top = Math.max(10, y - 60) + 'px'; 
+    }
+    
+    function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
+    
+    function startTtsFromTarget() { 
+        hideContextMenu(); 
+        currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); // 시작 위치 동기화
+        startTtsAtParagraph(targetParagraph); 
+    }
+    
+    function toggleHighlight() {
+        if(!targetParagraph) return;
+        const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
+        if(targetParagraph.classList.contains('highlight')) { targetParagraph.classList.remove('highlight'); book.highlights = book.highlights.filter(i => i !== idx); } 
+        else { targetParagraph.classList.add('highlight'); if(!book.highlights.includes(idx)) book.highlights.push(idx); }
+        localStorage.setItem('myBooks', JSON.stringify(myBooks)); hideContextMenu();
+    }
+    function copyTargetText() { if(targetParagraph) navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("복사되었습니다.")); hideContextMenu(); }
+
+    // --- TTS (동기화 & 문단 쪼개기 극복) ---
+    function initVoices() {
+        const voices = speechSynthesis.getVoices();
+        selectedVoice = voices.find(v => v.lang === 'ko-KR' && (v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Yuna'))) || voices.find(v => v.lang === 'ko-KR');
+    }
+    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoices; else initVoices();
+
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', pauseResumeTts);
+        navigator.mediaSession.setActionHandler('pause', pauseResumeTts);
+    }
+    function updateMediaSession() {
+        const book = myBooks.find(b => b.id === currentBookId);
+        if ('mediaSession' in navigator && book) navigator.mediaSession.metadata = new MediaMetadata({ title: book.title, artist: 'Pacemaker', artwork: book.coverUrl ?[{ src: book.coverUrl, sizes: '300x300', type: 'image/jpeg' }] :[] });
+    }
+
+    function startTts() { 
+        if (!paragraphsToSpeak.length) return; 
+        document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
+        isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
+        
+        let targetIdx = 0;
+        for(let i=0; i<paragraphsToSpeak.length; i++) {
+            if(Math.floor(paragraphsToSpeak[i].offsetLeft / els.viewer.clientWidth) === currentPage) { targetIdx = i; break; }
+        }
+        currentSpeakingIndex = targetIdx; ttsCurrentPage = currentPage; 
+        showTtsControls(); speakNext(); 
+    }
+    
+    function startTtsAtParagraph(targetP) { 
+        stopTts(); 
+        document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
+        isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
+        currentSpeakingIndex = paragraphsToSpeak.indexOf(targetP); ttsCurrentPage = currentPage; 
+        showTtsControls(); speakNext(); 
+    }
+    
+    function showTtsControls() {
+        els.titleTop.style.opacity = 0;
+        els.ttsControls.classList.add('active');
+        els.ttsPauseBtn.innerHTML = svgPause;
+        els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
+    }
+
+    function pauseResumeTts() {
+        if(isTtsPaused) { speechSynthesis.resume(); isTtsPaused = false; els.ttsPauseBtn.innerHTML = svgPause; document.getElementById('silentAudio').play().catch(()=>{}); } 
+        else { speechSynthesis.pause(); isTtsPaused = true; els.ttsPauseBtn.innerHTML = svgPlay; document.getElementById('silentAudio').pause(); }
+    }
+
+    function stopTts() { 
+        speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false;
+        paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); 
+        els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; 
+        document.getElementById('silentAudio').pause();
+    }
+    
+    function toggleTtsSpeed() {
+        currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length;
+        els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
+        if (isTtsSpeaking && !isTtsPaused) {
+            isManualRestart = true; speechSynthesis.cancel(); setTimeout(() => speakNext(true), 50); 
+        }
+    }
+    
+    // TTS 위치로 강제 동기화 (버튼 클릭 시)
+    function syncTtsPage() {
+        if (currentPage !== ttsCurrentPage && isTtsSpeaking) {
+            currentPage = ttsCurrentPage;
+            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
+            updateProgressUI();
+        }
+    }
+    
+    function speakNext(isReplay = false) {
+        if (!isTtsSpeaking) return;
+        if (!isReplay && currentSpeakingIndex >= paragraphsToSpeak.length) return stopTts();
+        
+        const p = paragraphsToSpeak[currentSpeakingIndex];
+        paragraphsToSpeak.forEach(x => x.classList.remove('speaking')); p.classList.add('speaking');
+        
+        const startPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
+        
+        // 사용자가 다른 페이지를 구경 중이지 않을 때만(읽고있는 곳을 보고있을때만) 화면을 따라가게 함
+        if (currentPage === ttsCurrentPage || isManualRestart) {
+            if(startPage !== currentPage) {
+                currentPage = startPage;
+                els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
+                updateProgressUI(); saveProgress();
+            }
+        }
+        ttsCurrentPage = startPage;
+
+        ttsUtterance = new SpeechSynthesisUtterance(p.textContent);
+        if (selectedVoice) ttsUtterance.voice = selectedVoice;
+        ttsUtterance.rate = speedOptions[currentSpeedIndex];
+        
+        //[문단 잘림 완벽 극복] 단어 추적 로직 (페이지를 걸치고 있으면 실시간으로 넘김)
+        ttsUtterance.onboundary = (e) => {
+            if (e.name !== 'word' && e.name !== 'sentence') return;
+            let textNode = null;
+            for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE) { textNode = p.childNodes[i]; break; } }
+            if (!textNode) return;
+
+            try {
+                const range = document.createRange();
+                const start = Math.min(e.charIndex, textNode.length - 1);
+                const end = Math.min(e.charIndex + Math.max(e.charLength || 1, 1), textNode.length);
+                if (start >= end) return;
+                
+                range.setStart(textNode, start); range.setEnd(textNode, end);
+                const rect = range.getBoundingClientRect();
+                
+                // 단어의 가로 위치를 계산해서 페이지 알아내기
+                const viewerRect = els.viewer.getBoundingClientRect();
+                const absoluteLeft = els.viewer.scrollLeft + (rect.left - viewerRect.left);
+                const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth); // 여백 버퍼링 10px
+
+                if (wordPage >= 0 && wordPage < totalPages) {
+                    // 사용자가 딴 페이지를 보는 중이 아니라면 단어 페이지에 맞춰서 따라가기
+                    if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) {
+                        currentPage = wordPage;
+                        els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
+                        updateProgressUI();
+                    }
+                    ttsCurrentPage = wordPage;
+                }
+            } catch(err) {}
+        };
+
+        ttsUtterance.onend = () => { if(isManualRestart) isManualRestart = false; else { currentSpeakingIndex++; speakNext(); } };
+        ttsUtterance.onerror = () => { if(isManualRestart) isManualRestart = false; else stopTts(); };
+        speechSynthesis.speak(ttsUtterance);
+    }
+
+    // --- 설정 ---
+    function changeFontSize(delta) {
+        fontSize = Math.max(12, Math.min(30, fontSize + delta));
+        document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
+        setTimeout(() => {
+            calculatePages();
+            let targetP = null;
+            paragraphsToSpeak.forEach(p => { if(targetP) return; if(Math.floor(p.offsetLeft / els.viewer.clientWidth) === currentPage) targetP = p; });
+            els.viewer.style.scrollBehavior = 'auto'; 
+            if(targetP) { const newPage = Math.floor(targetP.offsetLeft / els.viewer.clientWidth); els.viewer.scrollLeft = newPage * els.viewer.clientWidth; currentPage = newPage; } 
+            else els.viewer.scrollLeft = currentPage * els.viewer.clientWidth;
+            els.viewer.style.scrollBehavior = 'smooth'; 
+            updateProgressUI(); saveProgress();
+        }, 150);
+    }
+
+    function setTheme(theme, btnEl) {
+        document.body.className = `theme-${theme}`; 
+        document.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
+        if(btnEl) btnEl.classList.add('active');
+    }
+
+    window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
+    showBookshelf();
+</script>
+</body>
+</html>
