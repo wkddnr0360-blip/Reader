@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader</title>
     
-    <!-- PWA 및 앱 아이콘 설정 (경로: /Reader/) -->
+    <!-- PWA 및 앱 아이콘 설정 -->
     <link rel="manifest" href="/Reader/manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="/Reader/icon-512.png">
@@ -22,7 +22,6 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
-        /* 앱 최적화: 스와이프 바운스 현상 원천 차단 */
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
@@ -34,7 +33,7 @@
         }
         .header-btn { background: none; border: none; cursor: pointer; color: inherit; width: 40px; text-align: left; display: flex; align-items: center; }
         header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
-        .header-right { width: 40px; }
+        .header-right { width: 40px; display: flex; justify-content: flex-end; align-items: center; }
 
         /* --- 헤더 통합 TTS 컨트롤러 --- */
         #tts-header-controls { 
@@ -74,6 +73,7 @@
         .add-fab:active { transform: translateX(200px) scale(0.95); }
         @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } .add-fab:active { transform: scale(0.95); } }
 
+        /* 서재 메뉴 (꾹 누르기) */
         #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
         #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -81,7 +81,7 @@
         .menu-item:active { background: #f5f5f5; }
         .menu-item.danger { color: #ff3b30; border-bottom: none; }
 
-        /* --- 입력/수정 화면 --- */
+        /* --- 입력 화면 --- */
         #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
         input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
         textarea { flex: 1; min-height: 200px; resize: none; }
@@ -110,7 +110,7 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
-        /* 문단 팝업 메뉴 */
+        /* 독서 문단 팝업 메뉴 */
         #context-popup {
             position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; 
             border-radius: 16px; display: none; z-index: 150; 
@@ -174,6 +174,7 @@
 <body class="theme-white">
     <!-- 백그라운드 오디오 유지 트릭 -->
     <audio id="silentAudio" loop src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq" preload="auto"></audio>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
     <input type="file" id="cover-upload" accept="image/*" style="display:none;">
 
 <div id="app">
@@ -195,7 +196,11 @@
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
             </button>
         </div>
-        <div class="header-right"></div>
+        
+        <!-- 홈 화면 우측 상단 바로가기 메뉴 (백업 불러오기) -->
+        <div class="header-right" id="header-actions">
+            <button class="header-btn" onclick="document.getElementById('import-file').click()" title="백업 파일 불러오기" style="font-size:20px; justify-content:flex-end;">📂</button>
+        </div>
     </header>
 
     <div id="view-bookshelf">
@@ -203,24 +208,23 @@
         <button class="add-fab" onclick="showInputScreen()">+</button>
     </div>
 
-    <!-- 메뉴 (소설 수정 포함) -->
+    <!-- 개별 소설 메뉴 (꾹 누르기) -->
     <div id="shelf-menu-overlay" onclick="closeShelfMenu()">
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 내용/제목 수정</div>
             <div class="menu-item" onclick="triggerLocalCover()">🖼️ 내 앨범에서 표지 선택</div>
+            <div class="menu-item" onclick="exportSingleBook()">💾 이 책만 따로 백업하기</div>
             <div class="menu-item" onclick="resetCover()">🗑️ 표지 초기화</div>
             <div class="menu-item danger" onclick="deleteSelectedBook()">❌ 이 책 삭제</div>
         </div>
     </div>
 
-    <!-- 텍스트 입력 및 수정 뷰 -->
     <div id="view-input">
         <input type="text" id="book-title" placeholder="소설 제목">
-        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수천 편의 소설도 문제없이 저장됩니다!)"></textarea>
+        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수백~수천 편도 여유롭게 저장됩니다!)"></textarea>
         <button class="start-btn" id="btn-save-read" onclick="saveAndRead()">저장하고 읽기</button>
     </div>
 
-    <!-- 독서 화면 뷰 -->
     <div id="view-reader">
         <div id="context-popup">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 여기서부터 재생</div>
@@ -240,33 +244,37 @@
         </footer>
     </div>
 
-    <!-- 설정 및 데이터 백업 시트 -->
+    <!-- 바텀 시트 (설정 및 전체 백업 관리) -->
     <div id="sheet-overlay" onclick="closeSettings()"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
         <div class="color-palette">
-            <div class="color-circle active" style="background:#fff; color:#000;" onclick="setTheme('white', this)"></div>
-            <div class="color-circle" style="background:#fcf9ea; color:#000;" onclick="setTheme('cream', this)"></div>
-            <div class="color-circle" style="background:#e3eadc; color:#000;" onclick="setTheme('green', this)"></div>
-            <div class="color-circle" style="background:#4a4a4a; color:#fff;" onclick="setTheme('gray', this)"></div>
-            <div class="color-circle" style="background:#121212; color:#fff;" onclick="setTheme('black', this)"></div>
+            <div class="color-circle active" data-theme="white" style="background:#fff; color:#000;" onclick="setTheme('white', this)"></div>
+            <div class="color-circle" data-theme="cream" style="background:#fcf9ea; color:#000;" onclick="setTheme('cream', this)"></div>
+            <div class="color-circle" data-theme="green" style="background:#e3eadc; color:#000;" onclick="setTheme('green', this)"></div>
+            <div class="color-circle" data-theme="gray" style="background:#4a4a4a; color:#fff;" onclick="setTheme('gray', this)"></div>
+            <div class="color-circle" data-theme="black" style="background:#121212; color:#fff;" onclick="setTheme('black', this)"></div>
         </div>
         <div class="setting-title">글자 크기</div>
         <div class="font-control">
             <button class="font-btn" onclick="changeFontSize(-1)">가 -</button>
             <button class="font-btn" onclick="changeFontSize(1)">가 +</button>
         </div>
-        <div class="setting-title">데이터 백업 및 복원 (기기 변경 시 사용)</div>
+        <div class="setting-title">전체 데이터 백업 및 복원 (기기 변경 시 사용)</div>
         <div class="font-control">
-            <button class="font-btn" onclick="exportData()">💾 백업 파일 다운로드</button>
+            <button class="font-btn" onclick="exportAllData()">📚 모든 소설 백업</button>
             <button class="font-btn" onclick="document.getElementById('import-file').click()">📂 파일 불러오기</button>
         </div>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
     </div>
 </div>
 
 <script>
-    // --- [용량 무제한 IndexedDB] 설정 (수천 개 대용량 소설 저장) ---
+    // --- [개인 설정 저장 로직] (앱 재시작 시 유지) ---
+    let savedSettings = JSON.parse(localStorage.getItem('pacemakerSettings')) || { fontSize: 18, theme: 'white' };
+    let fontSize = savedSettings.fontSize;
+    let currentTheme = savedSettings.theme;
+
+    // ---[대용량 DB] IndexedDB 설정 ---
     const DB_NAME = 'PacemakerDB';
     const STORE_NAME = 'books';
     let db;
@@ -294,8 +302,8 @@
 
     // --- 글로벌 상태 변수 ---
     let myBooks =[];
-    let currentBookId = null, totalPages = 1, currentPage = 0, fontSize = 18;
-    let editingBookId = null; // 수정 모드 식별자
+    let currentBookId = null, totalPages = 1, currentPage = 0;
+    let editingBookId = null; 
     
     const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -315,20 +323,21 @@
         vInput: document.getElementById('view-input'), title: document.getElementById('book-title'), text: document.getElementById('text-input'), btnStart: document.getElementById('btn-save-read'),
         vReader: document.getElementById('view-reader'), viewer: document.getElementById('viewer-container'), content: document.getElementById('book-content'),
         titleTop: document.getElementById('top-title'), btnBack: document.getElementById('back-btn'), header: document.getElementById('main-header'),
-        pageNum: document.getElementById('pageNumber'), progress: document.getElementById('nav-progress-fill'),
+        pageNum: document.getElementById('pageNumber'), progress: document.getElementById('nav-progress-fill'), headerActions: document.getElementById('header-actions'),
         ctxPopup: document.getElementById('context-popup'), shelfMenu: document.getElementById('shelf-menu-overlay'),
         sheetOver: document.getElementById('sheet-overlay'), sheet: document.getElementById('settings-sheet'),
         ttsControls: document.getElementById('tts-header-controls'), ttsPauseBtn: document.getElementById('tts-pause-btn'), ttsSpeedBtn: document.getElementById('tts-speed-btn')
     };
 
-    document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
-
-    // 앱 초기화 및 데이터 불러오기
+    // 앱 초기화 및 설정 복원
     window.onload = async () => {
+        document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
+        setTheme(currentTheme, null, true);
+
         try {
             await initDB();
             myBooks = await loadAllBooks();
-            myBooks.sort((a,b) => b.id - a.id); // 가장 최근에 추가한 책이 맨 앞으로
+            myBooks.sort((a,b) => b.id - a.id);
             showBookshelf();
         } catch (e) {
             alert("데이터베이스 오류입니다. 브라우저의 시크릿 모드를 해제해주세요.");
@@ -348,7 +357,17 @@
 
     // --- 서재 렌더링 로직 ---
     function renderBookshelf() {
-        els.list.innerHTML = myBooks.length === 0 ? '<p style="grid-column:1/-1; text-align:center; color:#888; margin-top:50px;">+ 버튼을 눌러 소설을 추가해보세요.</p>' : '';
+        if (myBooks.length === 0) {
+            els.list.innerHTML = `
+                <div style="grid-column:1/-1; text-align:center; margin-top:60px; color:#666;">
+                    <div style="font-size:40px; margin-bottom:16px;">📚</div>
+                    <p style="margin-bottom:24px; line-height:1.6;">우측 하단 <b>+</b> 버튼을 눌러 소설을 추가하거나<br>기존 백업 파일로 복원해보세요!</p>
+                    <button onclick="document.getElementById('import-file').click()" style="padding:14px 24px; border-radius:24px; border:1px solid #ddd; background:#fff; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.05); font-size:15px; color:#333;">📂 백업 파일 불러오기</button>
+                </div>`;
+            return;
+        }
+
+        els.list.innerHTML = '';
         myBooks.forEach((book, idx) => {
             const div = document.createElement('div'); div.className = 'book-card';
             let bgStyle = book.coverUrl ? `background-image: url('${book.coverUrl}')` : `background-color: ${defaultColors[idx % defaultColors.length]}`;
@@ -377,7 +396,7 @@
         els.text.value = book.text;
         els.btnStart.textContent = "수정하고 읽기";
         
-        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex';
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "소설 수정"; els.btnBack.style.display = 'flex';
     }
 
@@ -404,17 +423,16 @@
 
     function showBookshelf() {
         if(isTtsSpeaking) stopTts();
-        editingBookId = null; 
-        els.btnStart.textContent = "저장하고 읽기";
+        editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
         els.app.classList.remove('hud-hidden');
         els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
-        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none';
+        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none'; els.headerActions.style.display = 'flex';
         renderBookshelf();
     }
 
     function showInputScreen() {
         editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
-        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex';
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "새 소설 추가"; els.btnBack.style.display = 'flex'; els.title.value = ''; els.text.value = '';
     }
 
@@ -435,35 +453,56 @@
         }
     }
 
-    // --- 데이터 백업 및 복구 (JSON 파일 연동) ---
-    async function exportData() {
+    // --- 데이터 백업 및 복구 모듈 ---
+    function triggerDownload(data, filename) {
+        const dataStr = JSON.stringify(data);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click(); 
+        URL.revokeObjectURL(url);
+    }
+
+    //[전체 소설] 백업
+    async function exportAllData() {
         try {
             const allBooks = await loadAllBooks();
             if (allBooks.length === 0) return alert("백업할 데이터가 없습니다.");
-            const dataStr = JSON.stringify(allBooks);
-            const blob = new Blob([dataStr], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `pacemaker_backup_${new Date().toISOString().slice(0,10)}.json`;
-            a.click(); URL.revokeObjectURL(url);
+            triggerDownload(allBooks, `pacemaker_all_backup_${new Date().toISOString().slice(0,10)}.json`);
             closeSettings();
-        } catch (e) { alert("백업 중 오류가 발생했습니다."); }
+        } catch (e) { alert("전체 백업 중 오류가 발생했습니다."); }
     }
 
+    // [개별 소설] 백업 (1권만)
+    async function exportSingleBook() {
+        try {
+            const book = myBooks.find(b => b.id === selectedShelfBookId);
+            closeShelfMenu();
+            if (!book) return;
+            const safeTitle = book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_'); // 파일명 특수문자 제거
+            triggerDownload([book], `pacemaker_book_${safeTitle}.json`);
+        } catch (e) { alert("개별 백업 중 오류가 발생했습니다."); }
+    }
+
+    //[마법의 통합 복원] 1권이든 전체든 알아서 합쳐줍니다
     async function importData(event) {
         const file = event.target.files[0];
         if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                const importedBooks = JSON.parse(e.target.result);
-                if(!Array.isArray(importedBooks)) throw new Error("Invalid Format");
+                let importedData = JSON.parse(e.target.result);
+                // 혹시 배열이 아닌 단일 객체라면 배열로 감싸주기
+                if(!Array.isArray(importedData)) importedData = [importedData];
+                
                 let count = 0;
-                for (const book of importedBooks) {
-                    if(book.id && book.title && book.text) { await saveBookToDB(book); count++; }
+                for (const book of importedData) {
+                    if(book.id && book.title && book.text) { 
+                        await saveBookToDB(book); 
+                        count++; 
+                    }
                 }
-                alert(`${count}개의 소설 데이터가 성공적으로 복원되었습니다.`);
+                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`);
                 myBooks = await loadAllBooks();
                 myBooks.sort((a,b) => b.id - a.id);
                 renderBookshelf(); closeSettings();
@@ -497,7 +536,7 @@
             }
         });
 
-        els.vShelf.style.display = 'none'; els.vInput.style.display = 'none'; els.vReader.style.display = 'flex'; 
+        els.vShelf.style.display = 'none'; els.vInput.style.display = 'none'; els.vReader.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = book.title; els.btnBack.style.display = 'flex'; 
         els.app.classList.add('hud-hidden'); 
 
@@ -542,10 +581,8 @@
             const dx = e.changedTouches[0].clientX - touchStartX; const dy = e.changedTouches[0].clientY - touchStartY;
             
             if (isViewerSwiping) {
-                // 부드러운 스와이프 페이지 전환
                 if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) { if (dx < 0) turnPage(1); else turnPage(-1); }
             } else {
-                // 터치 페이지 전환 및 메뉴 토글
                 if(Math.abs(dx) < 10 && Math.abs(dy) < 10 && els.ctxPopup.style.display !== 'flex' && els.sheetOver.style.display !== 'block') {
                     const clickX = e.changedTouches[0].clientX; const screenW = window.innerWidth;
                     if (clickX < screenW * 0.25) turnPage(-1); else if (clickX > screenW * 0.75) turnPage(1); 
@@ -589,15 +626,8 @@
         let finalX = Math.max(10, Math.min(x - els.ctxPopup.offsetWidth/2, window.innerWidth - els.ctxPopup.offsetWidth - 10));
         els.ctxPopup.style.left = finalX + 'px'; els.ctxPopup.style.top = Math.max(10, y - 60) + 'px'; 
     }
-    
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
-    
-    function startTtsFromTarget() { 
-        hideContextMenu(); 
-        currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth);
-        startTtsAtParagraph(targetParagraph); 
-    }
-    
+    function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
@@ -607,28 +637,22 @@
     }
     function copyTargetText() { if(targetParagraph) navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); hideContextMenu(); }
 
-    // --- [최적화] TTS 설정 (삼성 기기 기본 설정 음성 최우선 적용) ---
+    // --- TTS 설정 ---
     function initVoices() {
         const voices = speechSynthesis.getVoices();
         const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
 
         if (koVoices.length > 0) {
-            // 1순위: 기기에 설정된 기본 목소리 (삼성 TTS '음성 5' 등)
             let bestVoice = koVoices.find(v => v.default);
-            // 2순위: 삼성 목소리 우선 검색
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.toLowerCase().includes('samsung'));
-            // 3순위: MS Edge / 애플 고품질
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Online (Natural)'));
             if (!bestVoice) bestVoice = koVoices.find(v => v.name.includes('Premium'));
-            // 4순위: 첫 번째 기본 목소리
             if (!bestVoice) bestVoice = koVoices[0];
-            
             selectedVoice = bestVoice;
         }
     }
     if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoices; else initVoices();
 
-    // 잠금화면 미디어 컨트롤러 연동
     if ('mediaSession' in navigator) {
         navigator.mediaSession.setActionHandler('play', pauseResumeTts);
         navigator.mediaSession.setActionHandler('pause', pauseResumeTts);
@@ -647,16 +671,13 @@
         for(let i=0; i<paragraphsToSpeak.length; i++) {
             if(Math.floor(paragraphsToSpeak[i].offsetLeft / els.viewer.clientWidth) === currentPage) { targetIdx = i; break; }
         }
-        currentSpeakingIndex = targetIdx; ttsCurrentPage = currentPage; 
-        showTtsControls(); speakNext(); 
+        currentSpeakingIndex = targetIdx; ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
     
     function startTtsAtParagraph(targetP) { 
-        stopTts(); 
-        document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
+        stopTts(); document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
         isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
-        currentSpeakingIndex = paragraphsToSpeak.indexOf(targetP); ttsCurrentPage = currentPage; 
-        showTtsControls(); speakNext(); 
+        currentSpeakingIndex = paragraphsToSpeak.indexOf(targetP); ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
     
     function showTtsControls() {
@@ -672,28 +693,22 @@
     function stopTts() { 
         speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false;
         paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); 
-        els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; 
-        document.getElementById('silentAudio').pause();
+        els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
     }
     
     function toggleTtsSpeed() {
         currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length;
         els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
-        if (isTtsSpeaking && !isTtsPaused) {
-            isManualRestart = true; speechSynthesis.cancel(); setTimeout(() => speakNext(true), 50); 
-        }
+        if (isTtsSpeaking && !isTtsPaused) { isManualRestart = true; speechSynthesis.cancel(); setTimeout(() => speakNext(true), 50); }
     }
     
-    // TTS 위치로 강제 동기화 
     function syncTtsPage() {
         if (currentPage !== ttsCurrentPage && isTtsSpeaking) {
             currentPage = ttsCurrentPage;
-            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
-            updateProgressUI();
+            els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI();
         }
     }
     
-    // TTS 연속 재생 및 실시간 문단 추적 로직
     function speakNext(isReplay = false) {
         if (!isTtsSpeaking) return;
         if (!isReplay && currentSpeakingIndex >= paragraphsToSpeak.length) return stopTts();
@@ -702,7 +717,6 @@
         paragraphsToSpeak.forEach(x => x.classList.remove('speaking')); p.classList.add('speaking');
         
         const startPage = Math.floor(p.offsetLeft / els.viewer.clientWidth);
-        
         if (currentPage === ttsCurrentPage || isManualRestart) {
             if(startPage !== currentPage) {
                 currentPage = startPage;
@@ -716,46 +730,42 @@
         if (selectedVoice) ttsUtterance.voice = selectedVoice;
         ttsUtterance.rate = speedOptions[currentSpeedIndex];
         
-        // 단어 단위 스크롤 동기화 (두 페이지에 걸친 문단 잘림 완벽 방지)
         ttsUtterance.onboundary = (e) => {
             if (e.name !== 'word' && e.name !== 'sentence') return;
             let textNode = null;
             for (let i=0; i<p.childNodes.length; i++) { if (p.childNodes[i].nodeType === Node.TEXT_NODE) { textNode = p.childNodes[i]; break; } }
             if (!textNode) return;
-
             try {
                 const range = document.createRange();
                 const start = Math.min(e.charIndex, textNode.length - 1);
                 const end = Math.min(e.charIndex + Math.max(e.charLength || 1, 1), textNode.length);
                 if (start >= end) return;
-                
                 range.setStart(textNode, start); range.setEnd(textNode, end);
                 const rect = range.getBoundingClientRect();
-                
-                const viewerRect = els.viewer.getBoundingClientRect();
-                const absoluteLeft = els.viewer.scrollLeft + (rect.left - viewerRect.left);
+                const absoluteLeft = els.viewer.scrollLeft + (rect.left - els.viewer.getBoundingClientRect().left);
                 const wordPage = Math.floor((absoluteLeft - 10) / els.viewer.clientWidth);
-
                 if (wordPage >= 0 && wordPage < totalPages) {
                     if (currentPage === ttsCurrentPage && wordPage !== ttsCurrentPage) {
                         currentPage = wordPage;
-                        els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' });
-                        updateProgressUI();
+                        els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI();
                     }
                     ttsCurrentPage = wordPage;
                 }
             } catch(err) {}
         };
-
         ttsUtterance.onend = () => { if(isManualRestart) isManualRestart = false; else { currentSpeakingIndex++; speakNext(); } };
         ttsUtterance.onerror = () => { if(isManualRestart) isManualRestart = false; else stopTts(); };
         speechSynthesis.speak(ttsUtterance);
     }
 
-    // --- 환경 설정 ---
+    // --- 환경 설정 영구 저장 로직 ---
     function changeFontSize(delta) {
         fontSize = Math.max(12, Math.min(30, fontSize + delta));
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
+        
+        savedSettings.fontSize = fontSize;
+        localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings));
+
         setTimeout(() => {
             calculatePages();
             let targetP = null;
@@ -768,15 +778,21 @@
         }, 150);
     }
 
-    function setTheme(theme, btnEl) {
+    function setTheme(theme, btnEl, isInit = false) {
         document.body.className = `theme-${theme}`; 
-        document.querySelectorAll('.color-circle').forEach(el => el.classList.remove('active'));
-        if(btnEl) btnEl.classList.add('active');
+        document.querySelectorAll('.color-circle').forEach(el => {
+            el.classList.remove('active');
+            if(el.dataset.theme === theme) el.classList.add('active');
+        });
+        
+        if (!isInit) {
+            savedSettings.theme = theme;
+            localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings));
+        }
     }
 
     window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
 
-    // PWA 서비스 워커 등록 (안드로이드/아이폰 앱 설치 지원)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err));
