@@ -761,6 +761,7 @@ function pauseResumeTts() {
 }
 function stopTts() { 
     speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false; lastCharIndex = 0;
+    if (ttsKeepAliveTimer) clearTimeout(ttsKeepAliveTimer); // 타이머 누수 방지
     paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
 }
 function toggleTtsSpeed() {
@@ -774,11 +775,17 @@ function syncTtsPage() {
 // 안드로이드 TTS 강제 종료 방어 (14초 반복 리프레시)
 function keepTtsAlive() {
     if (ttsKeepAliveTimer) clearTimeout(ttsKeepAliveTimer);
+    
+    // 삼성 브라우저 및 삼성 TTS 엔진은 pause() 호출 시 음성이 완전히 먹통이 되는 버그가 있으므로 우회
+    const isSamsung = /samsungbrowser/i.test(navigator.userAgent) || (selectedVoice && selectedVoice.name.toLowerCase().includes('samsung'));
+
     if (isTtsSpeaking && !isTtsPaused && isBgPlayEnabled) {
         ttsKeepAliveTimer = setTimeout(() => {
             if (isTtsSpeaking && !isTtsPaused) {
-                speechSynthesis.pause();
-                setTimeout(() => speechSynthesis.resume(), 10);
+                if (!isSamsung) {
+                    speechSynthesis.pause();
+                    setTimeout(() => speechSynthesis.resume(), 50);
+                }
                 keepTtsAlive();
             }
         }, 14000);
