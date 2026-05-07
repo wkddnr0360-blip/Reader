@@ -216,7 +216,7 @@ async function generateAiCover() {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
         const sysPrompt = `You are an expert anime image prompt engineer. Output ONLY the comma-separated prompt string. Limit to 30 words. No explanations.`;
         const payload = {
-            system_instruction: { parts: [{ text: sysPrompt }] },
+            systemInstruction: { parts: [{ text: sysPrompt }] },
             contents: [{ role: "user", parts: [{ text: `Extract character names and visual themes from title: "${book.title}" and text: "${sample}". Must include tags: masterpiece, best quality, modern high quality japanese anime style, official art, light novel cover.` }] }],
             generationConfig: { temperature: 0.2 }
         };
@@ -575,7 +575,7 @@ async function callGemini(promptText, modelName = "gemini-3-flash-preview", syst
     
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     const payload = { contents: [{ role: "user", parts: [{ text: promptText }] }], generationConfig: { temperature: 0.2 } };
-    if (systemText) payload.system_instruction = { parts: [{ text: systemText }] };
+    if (systemText) payload.systemInstruction = { parts: [{ text: systemText }] };
     
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
@@ -633,10 +633,9 @@ async function sendChatMessage() {
         historyContents.push({ role: "user", parts: [{ text: input }] });
 
         const payload = {
-            system_instruction: { parts: [{ text: sysInst }] },
+            systemInstruction: { parts: [{ text: sysInst }] },
             contents: historyContents,
-            generationConfig: { temperature: 0.2 },
-            tools: [{ googleSearch: {} }] // 구글 검색(Grounding) 활성화
+            generationConfig: { temperature: 0.2 }
         };
 
         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
