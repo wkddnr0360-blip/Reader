@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader</title>
     
+    <!-- PWA 및 앱 아이콘 설정 -->
     <link rel="manifest" href="/Reader/manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="/Reader/icon-512.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* --- 테마 및 기본 리셋 --- */
         :root { 
             --bg-color: #ffffff; --text-color: #333333; --ui-bg: #ffffff; --ui-text: #333333; --ui-border: rgba(0,0,0,0.05); 
             --font-size: 18px; 
@@ -26,6 +29,7 @@
             -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important;
         }
 
+        /* --- 상단 헤더 --- */
         header { 
             width: 100%; height: 56px; border-bottom: 1px solid var(--ui-border); 
             display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--ui-bg); color: var(--ui-text);
@@ -35,6 +39,7 @@
         header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
         .header-right { width: 40px; display: flex; justify-content: flex-end; align-items: center; }
 
+        /* --- 헤더 통합 TTS 컨트롤러 --- */
         #tts-header-controls { 
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             display: flex; align-items: center; gap: 6px; 
@@ -53,6 +58,7 @@
         .tts-ctrl-btn svg { width: 14px; height: 14px; }
         .tts-speed-btn { width: 42px; background: transparent; border: 1px solid #ddd; font-size: 12px;}
 
+        /* --- 서재 화면 --- */
         #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: auto;}
         #book-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; }
         .book-card { display: flex; flex-direction: column; cursor: pointer; user-select: none; }
@@ -76,12 +82,14 @@
         .menu-item:active { background: #f5f5f5; }
         .menu-item.danger { color: #ff3b30; border-bottom: none; }
 
+        /* --- 입력 화면 --- */
         #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
         input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
         textarea { flex: 1; min-height: 200px; resize: none; }
         .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.1s;}
         .start-btn:active { transform: scale(0.98); }
 
+        /* --- 독서 화면 --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
         #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; }
 
@@ -113,6 +121,7 @@
         .ctx-item:active { background: rgba(0,0,0,0.05); }
         .ctx-item:last-child { border-right: none; }
 
+        /* --- 하단 네비게이션 알약 --- */
         #reader-nav-pill { 
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; height: 60px; 
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -146,6 +155,7 @@
         .font-btn:active { background: rgba(0,0,0,0.05); }
         .font-btn:first-child { border-right: 1px solid rgba(128,128,128,0.2); }
 
+        /* 다크모드/테마 대응 */
         .theme-white { --bg-color: #ffffff; --text-color: #333; --ui-bg: #ffffff; --ui-text: #333; }
         .theme-cream { --bg-color: #fcf9ea; --text-color: #333; --ui-bg: #fcf9ea; --ui-text: #333; }
         .theme-green { --bg-color: #e3eadc; --text-color: #333; --ui-bg: #e3eadc; --ui-text: #333; }
@@ -202,6 +212,7 @@
         <button class="add-fab" onclick="showInputScreen()">+</button>
     </div>
 
+    <!-- 개별 소설 메뉴 -->
     <div id="shelf-menu-overlay" onclick="closeShelfMenu()" oncontextmenu="return false;">
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 내용/제목 수정</div>
@@ -222,7 +233,7 @@
         <div id="context-popup" oncontextmenu="return false;">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
             <div class="ctx-item" onclick="generateIllustration()">🎨 삽화</div>
-            <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광</div>
+            <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
             <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
         </div>
         <div id="viewer-container"><div id="book-content"></div></div>
@@ -240,6 +251,7 @@
         </footer>
     </div>
 
+    <!-- 설정 시트 -->
     <div id="sheet-overlay" onclick="closeSettings()" oncontextmenu="return false;"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
@@ -264,7 +276,7 @@
 </div>
 
 <script>
-    // 제미나이 API 키 (사용자 제공)
+    // --- [중요] 제미나이 API 키 ---
     const GEMINI_API_KEY = "AIzaSyCPUpUrKBsSiUOTjZ4rj5yzjOGA-YTurFE";
 
     let savedSettings = { fontSize: 18, theme: 'white' };
@@ -456,6 +468,7 @@
                 if(book.highlights.includes(idx)) p.classList.add('highlight');
                 els.content.appendChild(p);
 
+                // 저장된 삽화가 있다면 문단 아래에 추가
                 if(book.illustrations[idx]) {
                     const imgContainer = document.createElement('div');
                     imgContainer.className = 'illust-container';
@@ -563,7 +576,7 @@
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
-    // --- [혁신 기능] 제미나이(Gemini 1.5 Flash) 기반 초고퀄리티 AI 삽화 생성 로직 ---
+    // --- [에러 무시 플랜B 가동] 제미나이(Gemini 1.5 Flash) 기반 초고퀄리티 AI 삽화 생성 ---
     async function generateIllustration() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx);
@@ -580,6 +593,8 @@
 
         setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
 
+        let optimizedPrompt = "";
+        
         try {
             // 1. 맥락을 파악하기 위해 앞뒤 문장 3개를 묶어서 제미나이에게 전송
             let contextText = "";
@@ -604,53 +619,54 @@ Output ONLY the prompt string. No explanations.`;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
             });
-            const data = await response.json();
             
-            // 3. 제미나이가 만들어준 "찰떡" 프롬프트 추출
-            let optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
-            
-            // UI 업데이트
-            loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 완벽한 삽화를 그리고 있습니다... (최대 5초)</div>`;
-
-            // 4. 제미나이의 프롬프트를 이용해 무료 AI(Flux-anime)로 그림 생성!
-            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux-anime`;
-
-            let retries = 1;
-            const tryLoadImage = (url) => {
-                const img = new Image();
-                img.onload = async () => {
-                    loadingDiv.remove();
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'illust-container';
-                    imgContainer.innerHTML = `<img src="${url}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
-                    targetParagraph.after(imgContainer);
-                    
-                    book.illustrations[idx] = url;
-                    await saveBookToDB(book);
-                    calculatePages();
-                };
-                img.onerror = () => { 
-                    if (retries > 0) {
-                        retries--;
-                        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">서버 지연... 다른 채널로 재시도 중입니다 ⏳</div>`;
-                        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux`;
-                        tryLoadImage(fallbackUrl);
-                    } else {
-                        loadingDiv.remove(); 
-                        alert("서버 접속자가 많아 삽화 생성에 실패했습니다. 잠시 후 다시 시도해주세요."); 
-                        calculatePages(); 
-                    }
-                };
-                img.src = url;
-            };
-            
-            tryLoadImage(imgUrl);
-
+            if (response.ok) {
+                const data = await response.json();
+                optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
+            } else {
+                throw new Error("Gemini API Request Failed"); // 할당량 초과 시 고의로 에러 발생시켜 catch로 넘김
+            }
         } catch (error) {
-            loadingDiv.remove();
-            alert("제미나이 AI 분석 중 오류가 발생했습니다.");
-            calculatePages();
+            // [비법 플랜B] 제미나이가 기절해도 에러 팝업 안 띄우고 기본 텍스트로 바로 강행 돌파!
+            console.warn("제미나이 호출 실패, 플랜 B(우회)를 가동합니다.", error);
+            const fallbackText = targetParagraph.textContent.trim().substring(0, 50);
+            optimizedPrompt = fallbackText + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, highly detailed, cel shading, official art";
         }
+
+        // 제미나이 또는 플랜B 프롬프트로 무료 AI(Flux-anime)에게 그림 요청
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 완벽한 삽화를 그리고 있습니다... (최대 5초)</div>`;
+        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux-anime`;
+
+        let retries = 1;
+        const tryLoadImage = (url) => {
+            const img = new Image();
+            img.onload = async () => {
+                loadingDiv.remove();
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'illust-container';
+                imgContainer.innerHTML = `<img src="${url}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
+                targetParagraph.after(imgContainer);
+                
+                book.illustrations[idx] = url;
+                await saveBookToDB(book);
+                calculatePages();
+            };
+            img.onerror = () => { 
+                if (retries > 0) {
+                    retries--;
+                    loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">서버 지연... 다른 채널로 재시도 중입니다 ⏳</div>`;
+                    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux`;
+                    tryLoadImage(fallbackUrl);
+                } else {
+                    loadingDiv.remove(); 
+                    alert("그림 서버 접속자가 많아 삽화 생성에 실패했습니다. 잠시 후 다시 시도해주세요."); 
+                    calculatePages(); 
+                }
+            };
+            img.src = url;
+        };
+        
+        tryLoadImage(imgUrl);
     }
 
     async function deleteIllustration(idx, btnEl, event) {
