@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader</title>
     
-    <!-- PWA 및 앱 아이콘 설정 -->
     <link rel="manifest" href="/Reader/manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="/Reader/icon-512.png">
 
-    <!-- Firebase SDK (데이터 백업용) -->
+    <!-- [핵심] Firebase Compat SDK 로드 (글로벌 스코프 유지, 충돌 완전 방지) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 테마 및 기본 리셋 --- */
         :root { 
             --bg-color: #ffffff; --text-color: #333333; --ui-bg: #ffffff; --ui-text: #333333; --ui-border: rgba(0,0,0,0.05); 
             --font-size: 18px; 
@@ -26,12 +24,12 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
-        body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
-        /* UI 요소 텍스트 선택 방지 */
-        #view-reader, #view-bookshelf, header, #context-popup, #shelf-menu, #reader-nav-pill, #settings-sheet, .add-fab {
-            -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important;
+        /* 터치/스크롤 방어 */
+        #view-reader, header, #context-popup, #shelf-menu, #reader-nav-pill, #settings-sheet, .add-fab {
+            -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important;
         }
 
         /* --- 상단 헤더 --- */
@@ -44,7 +42,7 @@
         header h1 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; transition: opacity 0.2s;}
         .header-right { width: 40px; display: flex; justify-content: flex-end; align-items: center; }
 
-        /* --- 헤더 통합 TTS 컨트롤러 --- */
+        /* --- TTS 컨트롤러 --- */
         #tts-header-controls { 
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             display: flex; align-items: center; gap: 6px; 
@@ -54,23 +52,16 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.05); z-index: 10;
         }
         #tts-header-controls.active { opacity: 1; pointer-events: auto; }
-        
-        .tts-ctrl-btn { 
-            width: 32px; height: 32px; border-radius: 16px; background: #f0f0f0; color: #333; border: none; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; transition: transform 0.1s, background 0.2s;
-        }
+        .tts-ctrl-btn { width: 32px; height: 32px; border-radius: 16px; background: #f0f0f0; color: #333; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; transition: transform 0.1s, background 0.2s; }
         .tts-ctrl-btn:active { transform: scale(0.9); background: #e0e0e0; }
         .tts-ctrl-btn svg { width: 14px; height: 14px; }
         .tts-speed-btn { width: 42px; background: transparent; border: 1px solid #ddd; font-size: 12px;}
 
         /* --- 서재 화면 --- */
-        #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: auto;}
+        #view-bookshelf { flex: 1; overflow-y: auto; padding: 20px; background: #fafafa; display: block; position: relative; touch-action: pan-y; -webkit-overflow-scrolling: touch;}
         #book-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 12px; }
         .book-card { display: flex; flex-direction: column; cursor: pointer; user-select: none; }
-        .book-cover { 
-            aspect-ratio: 1 / 1.45; border-radius: 6px 12px 12px 6px; box-shadow: 2px 4px 12px rgba(0,0,0,0.08); 
-            background-color: #ddd; background-size: cover; background-position: center; transition: transform 0.1s;
-        }
+        .book-cover { aspect-ratio: 1 / 1.45; border-radius: 6px 12px 12px 6px; box-shadow: 2px 4px 12px rgba(0,0,0,0.08); background-color: #ddd; background-size: cover; background-position: center; transition: transform 0.1s; }
         .book-card:active .book-cover { transform: scale(0.95); }
         .book-info { margin-top: 10px; }
         .book-info h3 { font-size: 13px; font-weight: 500; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
@@ -88,25 +79,23 @@
         .menu-item.danger { color: #ff3b30; border-bottom: none; }
 
         /* --- 입력 화면 --- */
-        #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: auto;}
+        #view-input { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; gap: 15px; background: #fff; touch-action: pan-y; -webkit-overflow-scrolling: touch;}
         input[type="text"], textarea { width: 100%; border: 1px solid #ddd; border-radius: 12px; padding: 16px; font-size: 15px; outline: none; background: #fafafa; font-family: inherit;}
         textarea { flex: 1; min-height: 200px; resize: none; }
-        .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.1s;}
-        .start-btn:active { transform: scale(0.98); }
+        .start-btn { background-color: #333; color: white; border: none; padding: 18px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: background 0.2s;}
+        .start-btn:disabled { background-color: #999; cursor: not-allowed; }
 
         /* --- 독서 화면 --- */
         #view-reader { flex: 1; display: none; flex-direction: column; position: relative; overflow: hidden; background: var(--bg-color); }
-        #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; }
+        #viewer-container { flex: 1; overflow-x: hidden; overflow-y: hidden; display: flex; will-change: transform; touch-action: pan-x; }
 
-        #book-content { 
-            height: 100%; padding: 30px 20px; box-sizing: border-box; column-width: calc(100vw - 40px); column-gap: 40px; column-fill: auto;
-        }
+        #book-content { height: 100%; padding: 30px 20px; box-sizing: border-box; column-width: calc(100vw - 40px); column-gap: 40px; column-fill: auto; }
         @media (min-width: 500px) { #book-content { column-width: 460px; } }
         
         #book-content p { 
             font-family: 'Gowun Batang', serif !important; font-size: var(--font-size); line-height: 1.95; letter-spacing: -0.5px; color: var(--text-color); text-align: justify; word-break: keep-all;
             margin-top: 0; margin-bottom: 0.8em; text-indent: 0.6em; transition: background 0.2s; padding: 4px 8px; border-radius: 12px; 
-            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
         }
         #book-content p.dialogue { text-indent: 0 !important; }
         #book-content p.empty-line { margin-bottom: 0; height: 1em; padding: 0; }
@@ -114,11 +103,10 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
-        .illust-container { width: 100%; margin: 16px 0; position: relative; text-align: center; break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid; }
+        .illust-container { width: 100%; margin: 16px 0; position: relative; text-align: center; break-inside: avoid; page-break-inside: avoid; }
         .illust-img { max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); object-fit: contain; }
         .illust-del-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; width: 32px; height: 32px; border-radius: 16px; cursor: pointer; font-size: 14px; z-index: 10; }
 
-        /* 팝업 UI */
         #context-popup {
             position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; border-radius: 16px; display: none; z-index: 150; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.05); flex-direction: row; overflow: hidden; white-space: nowrap;
@@ -127,7 +115,7 @@
         .ctx-item:active { background: rgba(0,0,0,0.05); }
         .ctx-item:last-child { border-right: none; }
 
-        /* --- 하단 네비게이션 알약 --- */
+        /* --- 하단 네비게이션 --- */
         #reader-nav-pill { 
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 400px; height: 60px; 
             background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -140,12 +128,11 @@
         .icon-btn { background: none; border: none; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 18px; transition: background 0.2s; z-index: 20; position: relative;}
         .icon-btn:active { background: rgba(0,0,0,0.05); }
         .page-count { font-size: 13px; font-weight: 600; opacity: 0.7; letter-spacing: 1px; cursor: pointer; padding: 8px 12px; border-radius: 12px; background: none; border: none; color: inherit; font-family: inherit; z-index: 20; position: relative;}
-        .page-count:active { background: rgba(0,0,0,0.05); }
 
         .hud-hidden header { transform: translateY(-100%); opacity: 0; pointer-events: none; }
         .hud-hidden #reader-nav-pill { transform: translate(-50%, 150%); opacity: 0; pointer-events: none !important; }
         
-        /* 설정 시트 (Firebase 동기화 포함) */
+        /* 설정 시트 (Firebase 클라우드 연동) */
         #sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 210; display: none; backdrop-filter: blur(2px);}
         #settings-sheet { 
             position: absolute; bottom: 0; left: 0; width: 100%; background: var(--ui-bg); color: var(--ui-text);
@@ -155,10 +142,9 @@
         .setting-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; opacity: 0.5; margin-top: 10px; }
         .color-palette { display: flex; gap: 14px; margin-bottom: 16px;}
         .color-circle { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;}
-        .color-circle:active { transform: scale(0.9); }
         .color-circle.active::after { content: '✓'; color: inherit; font-size: 18px; opacity: 0.6; }
         .font-control { display: flex; background: rgba(128,128,128,0.1); border-radius: 16px; overflow: hidden; margin-bottom: 16px;}
-        .font-btn { flex: 1; padding: 14px; background: none; border: none; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--ui-text); }
+        .font-btn { flex: 1; padding: 14px; background: none; border: none; font-size: 15px; font-weight: 600; cursor: pointer; color: var(--ui-text); }
         .font-btn:active { background: rgba(0,0,0,0.05); }
         .font-btn:first-child { border-right: 1px solid rgba(128,128,128,0.2); }
 
@@ -211,7 +197,6 @@
             </button>
         </div>
         <div class="header-right" id="header-actions">
-            <!-- Firebase 클라우드 복원 버튼 -->
             <button class="header-btn" onclick="importFromFirebase()" title="클라우드 복원" style="font-size:20px; justify-content:flex-end;">☁️</button>
         </div>
     </header>
@@ -226,7 +211,7 @@
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 내용/제목 수정</div>
             <div class="menu-item" onclick="triggerLocalCover()">🖼️ 내 앨범에서 표지 선택</div>
-            <div class="menu-item" onclick="exportSingleBook()">💾 이 책만 파일로 백업</div>
+            <div class="menu-item" onclick="exportSingleBook()">💾 이 책만 로컬 백업</div>
             <div class="menu-item" onclick="resetCover()">🗑️ 표지 초기화</div>
             <div class="menu-item danger" onclick="deleteSelectedBook()">❌ 이 책 삭제</div>
         </div>
@@ -239,7 +224,6 @@
     </div>
 
     <div id="view-reader">
-        <!-- 팝업 메뉴 삽화 버튼 -->
         <div id="context-popup" oncontextmenu="return false;">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
             <div class="ctx-item" onclick="generateIllustration()">🎨 삽화</div>
@@ -261,7 +245,6 @@
         </footer>
     </div>
 
-    <!-- 설정 시트 (Firebase 동기화 패널 추가) -->
     <div id="sheet-overlay" onclick="closeSettings()" oncontextmenu="return false;"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
@@ -279,30 +262,19 @@
         </div>
         
         <div class="fb-sync-box">
-            <p>☁️ 클라우드 동기화 (기기 변경 시 백업 복구)</p>
+            <p>☁️ Firebase 클라우드 백업 (기기 연동)</p>
             <div class="fb-sync-code" id="sync-key-display">ABCD-1234</div>
             <div class="font-control" style="margin-bottom:0;">
                 <button class="font-btn" id="btn-fb-backup" onclick="exportToFirebase()" style="color:#007bff;">☁️ 서버에 백업</button>
                 <button class="font-btn" id="btn-fb-restore" onclick="importFromFirebase()" style="color:#007bff;">☁️ 서버에서 복원</button>
             </div>
         </div>
-        
-        <div class="setting-title" style="margin-top:16px;">로컬 파일 백업 (오프라인 전용)</div>
-        <div class="font-control">
-            <button class="font-btn" onclick="exportAllData()">💾 폰에 파일로 저장</button>
-            <button class="font-btn" onclick="document.getElementById('import-file').click()">📂 파일 불러오기</button>
-        </div>
     </div>
 </div>
 
-<script type="module">
-    // --- [중요] Firebase 및 Gemini SDK 설정 (모듈 방식) ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-
+<script>
+    // --- [중요] Firebase 및 Gemini 설정 ---
     const GEMINI_API_KEY = "AIzaSyCPUpUrKBsSiUOTjZ4rj5yzjOGA-YTurFE";
-
     const firebaseConfig = {
         apiKey: "AIzaSyAHul2RvLx1z0s1wyNWDHwxwvATIGBJGpQ",
         authDomain: "reader-cd499.firebaseapp.com",
@@ -313,19 +285,15 @@
         measurementId: "G-81X1LJQW6K"
     };
 
-    // Firebase 모듈 초기화
-    const app = initializeApp(firebaseConfig);
-    const dbFirestore = getFirestore(app);
-
-    // 구글 Gemini 공식 라이브러리 연동
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    // Firebase 초기화 (Compat 버전 사용 - 글로벌 스코프 안전)
+    firebase.initializeApp(firebaseConfig);
+    const dbFirestore = firebase.firestore();
 
     let savedSettings = { fontSize: 18, theme: 'white' };
     try { const stored = localStorage.getItem('pacemakerSettings'); if (stored) savedSettings = JSON.parse(stored); } catch(e) {}
     let fontSize = savedSettings.fontSize || 18;
     let currentTheme = savedSettings.theme || 'white';
 
-    // 클라우드 동기화 키
     let syncKey = localStorage.getItem('pacemakerSyncKey');
     if (!syncKey) {
         syncKey = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -333,7 +301,6 @@
     }
     document.getElementById('sync-key-display').textContent = syncKey;
 
-    // ---[대용량 DB] IndexedDB 설정 ---
     const DB_NAME = 'PacemakerDB';
     const STORE_NAME = 'books';
     let localDb;
@@ -349,17 +316,11 @@
     async function deleteBookFromDB(id) { return new Promise(resolve => { const tx = localDb.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).delete(id); tx.oncomplete = resolve; }); }
     async function loadAllBooks() { return new Promise(resolve => { const tx = localDb.transaction(STORE_NAME, 'readonly'); const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => resolve(req.result ||[]); }); }
 
-    let myBooks =[];
-    let currentBookId = null, totalPages = 1, currentPage = 0;
-    let editingBookId = null; 
-    
+    let myBooks =[]; let currentBookId = null, totalPages = 1, currentPage = 0; let editingBookId = null; 
     const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
-    const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0];
-    let currentSpeedIndex = 0;
-
-    let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
-    let ttsCurrentPage = 0; let ttsUtterance = null, selectedVoice = null;
+    const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0]; let currentSpeedIndex = 0;
+    let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; let ttsCurrentPage = 0; let ttsUtterance = null, selectedVoice = null;
     let paragraphsToSpeak =[], currentSpeakingIndex = -1; let lastCharIndex = 0; 
     let longPressTimer = null, targetParagraph = null, selectedShelfBookId = null;
     const defaultColors =['#6e8efb', '#f6d365', '#84fab0', '#ff0844', '#4facfe', '#9b59b6'];
@@ -378,9 +339,9 @@
 
     window.onload = async () => {
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
-        window.setTheme(currentTheme, null, true);
+        setTheme(currentTheme, null, true);
         try { await initDB(); myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id); } catch (e) { console.error("DB 로드 실패"); }
-        window.showBookshelf(); 
+        showBookshelf(); 
     };
 
     function playPaperSound() {
@@ -394,7 +355,8 @@
         } catch(e) {}
     }
 
-    window.renderBookshelf = function() {
+    // --- 서재 ---
+    function renderBookshelf() {
         if (myBooks.length === 0) {
             els.list.innerHTML = `<div style="grid-column:1/-1; text-align:center; margin-top:60px; color:#666;"><div style="font-size:40px; margin-bottom:16px;">📚</div><p style="margin-bottom:24px; line-height:1.6;">우측 하단 <b>+</b> 버튼을 눌러 소설을 추가하거나<br>우측 상단 ☁️ 버튼으로 클라우드 복원을 해보세요!</p></div>`;
             return;
@@ -404,31 +366,29 @@
             const div = document.createElement('div'); div.className = 'book-card';
             let bgStyle = book.coverUrl ? `background-image: url('${book.coverUrl}')` : `background-color: ${defaultColors[idx % defaultColors.length]}`;
             div.innerHTML = `<div class="book-cover" style="${bgStyle}"></div><div class="book-info"><h3>${book.title}</h3><p>${book.currentPage + 1}p 읽는 중</p></div>`;
-            
             let sx, sy, moved = false, pressTimer = null;
             div.addEventListener('touchstart', e => { 
                 const touch = e.touches[0]; sx = touch.clientX; sy = touch.clientY; moved = false;
                 pressTimer = setTimeout(() => { moved = true; navigator.vibrate?.(50); selectedShelfBookId = book.id; els.shelfMenu.style.display = 'flex'; }, 500); 
             }, {passive: true});
             div.addEventListener('touchmove', e => { const touch = e.touches[0]; if(Math.abs(touch.clientX - sx) > 10 || Math.abs(touch.clientY - sy) > 10) { moved = true; clearTimeout(pressTimer); } }, {passive: true});
-            div.addEventListener('touchend', () => { clearTimeout(pressTimer); if(!moved) window.openBook(book.id); });
+            div.addEventListener('touchend', () => { clearTimeout(pressTimer); if(!moved) openBook(book.id); });
             els.list.appendChild(div);
         });
     }
 
-    window.closeShelfMenu = function() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
-    
-    window.editSelectedBook = function() {
-        const book = myBooks.find(b => b.id === selectedShelfBookId); window.closeShelfMenu(); if(!book) return;
-        editingBookId = book.id; els.title.value = book.title; els.text.value = book.text; els.btnStart.textContent = "수정하고 읽기";
+    function closeShelfMenu() { els.shelfMenu.style.display = 'none'; selectedShelfBookId = null; }
+    function editSelectedBook() {
+        const book = myBooks.find(b => b.id === selectedShelfBookId); closeShelfMenu(); if(!book) return;
+        editingBookId = book.id; els.title.value = book.title; els.text.value = book.text; els.btnStart.textContent = "수정하고 읽기"; els.btnStart.disabled = false;
         els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "소설 수정"; els.btnBack.style.display = 'flex';
     }
 
-    window.triggerLocalCover = function() { document.getElementById('cover-upload').click(); }
+    function triggerLocalCover() { document.getElementById('cover-upload').click(); }
     document.getElementById('cover-upload').addEventListener('change', function(e) { 
         const file = e.target.files[0]; if(!file) return; 
-        const targetBookId = selectedShelfBookId; window.closeShelfMenu(); const reader = new FileReader(); 
+        const targetBookId = selectedShelfBookId; closeShelfMenu(); const reader = new FileReader(); 
         reader.onload = function(evt) { 
             const img = new Image();
             img.onload = async function() {
@@ -437,80 +397,95 @@
                 canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 const b = myBooks.find(x => x.id === targetBookId); 
-                if(b) { b.coverUrl = canvas.toDataURL('image/jpeg', 0.8); await saveBookToDB(b); window.renderBookshelf(); }
+                if(b) { b.coverUrl = canvas.toDataURL('image/jpeg', 0.8); await saveBookToDB(b); renderBookshelf(); }
             }; img.src = evt.target.result;
         }; reader.readAsDataURL(file); 
     });
     
-    window.resetCover = async function() { const id = selectedShelfBookId; window.closeShelfMenu(); const b = myBooks.find(x => x.id === id); if(b) { delete b.coverUrl; await saveBookToDB(b); window.renderBookshelf(); } }
-    window.deleteSelectedBook = async function() { const id = selectedShelfBookId; window.closeShelfMenu(); if(confirm('이 소설을 서재에서 삭제하시겠습니까?')) { myBooks = myBooks.filter(b => b.id !== id); await deleteBookFromDB(id); window.renderBookshelf(); } }
-
-    window.showBookshelf = function() {
-        if(isTtsSpeaking) window.stopTts();
-        editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
-        els.app.classList.remove('hud-hidden'); els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
-        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none'; els.headerActions.style.display = 'flex'; window.renderBookshelf();
+    async function resetCover() { const id = selectedShelfBookId; closeShelfMenu(); const b = myBooks.find(x => x.id === id); if(b) { delete b.coverUrl; await saveBookToDB(b); renderBookshelf(); } }
+    
+    // [버그수정] 삭제 시 즉시 렌더링
+    async function deleteSelectedBook() { 
+        const id = selectedShelfBookId; closeShelfMenu(); 
+        if(confirm('이 소설을 서재에서 삭제하시겠습니까?')) { 
+            myBooks = myBooks.filter(b => b.id !== id); 
+            await deleteBookFromDB(id); 
+            renderBookshelf(); 
+        } 
     }
 
-    window.showInputScreen = function() {
-        editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
+    function showBookshelf() {
+        if(isTtsSpeaking) stopTts();
+        editingBookId = null; els.btnStart.textContent = "저장하고 읽기"; els.btnStart.disabled = false;
+        els.app.classList.remove('hud-hidden'); els.vShelf.style.display = 'block'; els.vInput.style.display = 'none'; els.vReader.style.display = 'none';
+        els.titleTop.textContent = "서재"; els.btnBack.style.display = 'none'; els.headerActions.style.display = 'flex'; renderBookshelf();
+    }
+
+    function showInputScreen() {
+        editingBookId = null; els.btnStart.textContent = "저장하고 읽기"; els.btnStart.disabled = false;
         els.vShelf.style.display = 'none'; els.vInput.style.display = 'flex'; els.headerActions.style.display = 'none';
         els.titleTop.textContent = "새 소설 추가"; els.btnBack.style.display = 'flex'; els.title.value = ''; els.text.value = '';
     }
 
-    window.saveAndRead = async function() {
+    // [버그수정] 중복 추가 방지
+    async function saveAndRead() {
         const title = els.title.value.trim() || '제목 없는 소설'; const text = els.text.value.trim();
         if (!text) return alert("소설 내용을 입력해주세요!");
         
+        els.btnStart.disabled = true;
+        els.btnStart.textContent = "저장 중...";
+
         if (editingBookId) {
             const bookIndex = myBooks.findIndex(b => b.id === editingBookId);
             if(bookIndex > -1) {
                 myBooks[bookIndex].title = title; myBooks[bookIndex].text = text;
-                await saveBookToDB(myBooks[bookIndex]); window.openBook(editingBookId);
+                await saveBookToDB(myBooks[bookIndex]); 
+                openBook(editingBookId);
             }
-            editingBookId = null; els.btnStart.textContent = "저장하고 읽기";
+            editingBookId = null; 
         } else {
             const newBook = { id: Date.now(), title: title, text: text, currentPage: 0, highlights:[], illustrations: {} };
-            myBooks.unshift(newBook); await saveBookToDB(newBook); window.openBook(newBook.id);
+            myBooks.unshift(newBook); 
+            await saveBookToDB(newBook); 
+            openBook(newBook.id);
         }
+        els.btnStart.disabled = false;
+        els.btnStart.textContent = "저장하고 읽기";
     }
 
-    // --- Firebase 클라우드 동기화 모듈 ---
-    window.exportToFirebase = async function() {
+    // --- Firebase 클라우드 동기화 ---
+    async function exportToFirebase() {
         try {
             const allBooks = await loadAllBooks();
             if (allBooks.length === 0) return alert("백업할 데이터가 없습니다.");
 
             els.btnFbBackup.textContent = "백업 중... ⏳";
-            const userRef = doc(dbFirestore, "users", syncKey);
-            await setDoc(userRef, { lastBackup: new Date().toISOString() }, { merge: true });
+            const userRef = dbFirestore.collection("users").doc(syncKey);
+            await userRef.set({ lastBackup: new Date().toISOString() }, { merge: true });
 
             const chunkSize = 400;
             for (let i = 0; i < allBooks.length; i += chunkSize) {
                 const chunk = allBooks.slice(i, i + chunkSize);
-                const batch = writeBatch(dbFirestore);
+                const batch = dbFirestore.batch();
                 chunk.forEach(book => {
-                    const bookRef = doc(collection(userRef, "books"), book.id.toString());
+                    const bookRef = userRef.collection("books").doc(book.id.toString());
                     batch.set(bookRef, book);
                 });
                 await batch.commit();
             }
-            alert(`✅ 클라우드 동기화 완료!\n내 복구 키: ${syncKey}\n다른 기기에서 이 키를 입력하면 언제든 복원할 수 있습니다.`);
-        } catch (e) {
-            console.error(e); alert("파이어베이스 서버 연결 중 오류가 발생했습니다.");
-        } finally {
-            els.btnFbBackup.textContent = "☁️ 서버에 백업";
-        }
+            alert(`✅ 클라우드 동기화 완료!\n내 복구 키: ${syncKey}\n다른 기기에서 이 키를 입력하면 복원할 수 있습니다.`);
+        } catch (e) { alert("파이어베이스 서버 연결 중 오류가 발생했습니다."); } 
+        finally { els.btnFbBackup.textContent = "☁️ 서버에 백업"; }
     }
 
-    window.importFromFirebase = async function() {
+    async function importFromFirebase() {
         const inputKey = prompt("복원할 클라우드 복구 키(8자리)를 입력하세요:", syncKey);
         if (!inputKey) return;
         const key = inputKey.trim().toUpperCase();
 
         try {
             els.btnFbRestore.textContent = "복원 중... ⏳";
-            const booksSnapshot = await getDocs(collection(doc(dbFirestore, "users", key), "books"));
+            const booksSnapshot = await dbFirestore.collection("users").doc(key).collection("books").get();
 
             if (booksSnapshot.empty) {
                 alert("해당 키에 저장된 백업 데이터가 없습니다. 키를 다시 확인해주세요.");
@@ -528,22 +503,18 @@
 
             alert(`✅ ${count}개의 소설이 클라우드에서 성공적으로 복원되었습니다!`);
             myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id);
-            window.renderBookshelf(); window.closeSettings();
-        } catch(e) {
-            console.error(e); alert("파이어베이스 서버에서 데이터를 불러오는 중 오류가 발생했습니다.");
-        } finally {
-            els.btnFbRestore.textContent = "☁️ 서버에서 복원";
-        }
+            renderBookshelf(); closeSettings();
+        } catch(e) { alert("파이어베이스 서버에서 데이터를 불러오는 중 오류가 발생했습니다."); } 
+        finally { els.btnFbRestore.textContent = "☁️ 서버에서 복원"; }
     }
 
-    // 로컬 백업/복구 유지
+    // 로컬 백업 유지
     function triggerDownload(data, filename) {
         const dataStr = JSON.stringify(data); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
     }
-    window.exportAllData = async function() { try { const allBooks = await loadAllBooks(); if (allBooks.length === 0) return alert("백업할 데이터가 없습니다."); triggerDownload(allBooks, `pacemaker_all_backup_${new Date().toISOString().slice(0,10)}.json`); window.closeSettings(); } catch (e) { alert("전체 백업 중 오류가 발생했습니다."); } }
-    window.exportSingleBook = async function() { try { const book = myBooks.find(b => b.id === selectedShelfBookId); window.closeShelfMenu(); if (!book) return; triggerDownload([book], `pacemaker_book_${book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.json`); } catch (e) { alert("백업 중 오류가 발생했습니다."); } }
-    window.importLocalData = async function(event) {
+    async function exportSingleBook() { try { const book = myBooks.find(b => b.id === selectedShelfBookId); closeShelfMenu(); if (!book) return; triggerDownload([book], `pacemaker_book_${book.title.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.json`); } catch (e) { alert("백업 중 오류가 발생했습니다."); } }
+    async function importLocalData(event) {
         const file = event.target.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -556,13 +527,13 @@
                         await saveBookToDB(book); count++; 
                     }
                 }
-                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`); myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id); window.renderBookshelf(); window.closeSettings();
+                alert(`${count}개의 소설이 성공적으로 복원되었습니다!`); myBooks = await loadAllBooks(); myBooks.sort((a,b) => b.id - a.id); renderBookshelf(); closeSettings();
             } catch(err) { alert("올바른 백업 파일이 아닙니다."); }
         }; reader.readAsText(file); event.target.value = ''; 
     }
 
-    // --- 독서 뷰 렌더링 ---
-    window.openBook = function(id) {
+    // --- 독서 ---
+    function openBook(id) {
         const book = myBooks.find(b => b.id === id); if(!book) return;
         currentBookId = id; currentPage = book.currentPage || 0;
         if(!book.highlights) book.highlights =[]; 
@@ -605,13 +576,13 @@
 
     els.viewer.addEventListener('touchstart', e => {
         const touch = e.touches[0]; touchStartX = touch.clientX; touchStartY = touch.clientY; 
-        isLongPress = false; isViewerSwiping = false; window.hideContextMenu(); window.closeSettings();
+        isLongPress = false; isViewerSwiping = false; hideContextMenu(); closeSettings();
         
         if(e.target.tagName === 'P' && !e.target.classList.contains('empty-line')) {
             targetParagraph = e.target;
             longPressTimer = setTimeout(() => { 
                 isLongPress = true; navigator.vibrate?.(50); 
-                targetParagraph.classList.add('focused'); window.showContextMenu(touchStartX, touchStartY); 
+                targetParagraph.classList.add('focused'); showContextMenu(touchStartX, touchStartY); 
             }, 450); 
         }
     }, {passive: true});
@@ -648,7 +619,7 @@
         }
     }
 
-    window.promptPageJump = function() {
+    function promptPageJump() {
         const input = prompt(`이동할 페이지 숫자를 입력하세요 (1 ~ ${totalPages})`, currentPage + 1);
         if (input !== null) {
             const pageNum = parseInt(input, 10);
@@ -677,30 +648,30 @@
     document.getElementById('main-header').addEventListener('touchstart', e => e.stopPropagation());
     document.getElementById('reader-nav-pill').addEventListener('touchstart', e => { if (e.target.id !== 'progress-hitbox' && !e.target.closest('#progress-hitbox')) e.stopPropagation(); });
 
-    window.openSettings = function() { els.sheetOver.style.display = 'block'; setTimeout(() => els.sheet.classList.add('show'), 10); }
-    window.closeSettings = function() { els.sheet.classList.remove('show'); setTimeout(() => els.sheetOver.style.display = 'none', 300); }
+    function openSettings() { els.sheetOver.style.display = 'block'; setTimeout(() => els.sheet.classList.add('show'), 10); }
+    function closeSettings() { els.sheet.classList.remove('show'); setTimeout(() => els.sheetOver.style.display = 'none', 300); }
 
-    window.showContextMenu = function(x, y) {
+    function showContextMenu(x, y) {
         els.ctxPopup.style.display = 'flex';
         let finalX = Math.max(10, Math.min(x - els.ctxPopup.offsetWidth/2, window.innerWidth - els.ctxPopup.offsetWidth - 10));
         els.ctxPopup.style.left = finalX + 'px'; els.ctxPopup.style.top = Math.max(10, y - 60) + 'px'; 
     }
-    window.hideContextMenu = function() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
-    window.startTtsFromTarget = function() { window.hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); window.startTtsAtParagraph(targetParagraph); }
+    function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
+    function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
-    // --- [혁신 기능] 공식 Gemini SDK + Flux 하이브리드 삽화 생성 ---
-    window.generateIllustration = async function() {
+    // --- [무적 플랜B 탑재] Gemini 직접 호출 REST API 방식 ---
+    async function generateIllustration() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx);
         const book = myBooks.find(b => b.id === currentBookId);
-        window.hideContextMenu();
+        hideContextMenu();
 
         if(!book.illustrations) book.illustrations = {};
         if(book.illustrations[idx]) return alert("이미 이 문단에 삽화가 있습니다.");
 
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'illust-container loading';
-        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ Firebase Gemini AI가 문맥을 분석 중입니다...</div>`;
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ 제미나이 AI가 문맥을 분석 중입니다...</div>`;
         targetParagraph.after(loadingDiv);
 
         setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
@@ -714,6 +685,7 @@
                 if(pNode) contextText += pNode.textContent + "\n";
             }
 
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             const sysPrompt = `You are a prompt engineer for an anime AI image generator. 
 Novel Title: ${book.title}
 Scene Text: ${contextText}
@@ -722,18 +694,24 @@ Write a comma-separated English prompt for an image generation API.
 Must include tags: "masterpiece, best quality, modern high quality japanese anime style, official art, light novel illustration".
 Output ONLY the prompt string. No explanations.`;
 
-            // [핵심 변경] 공식 Generative AI SDK 호출
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result = await model.generateContent(sysPrompt);
-            optimizedPrompt = result.response.text().trim();
+            const response = await fetch(geminiUrl, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
+            });
             
+            if (response.ok) {
+                const data = await response.json();
+                optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
+            } else { throw new Error("Gemini Error"); }
         } catch (error) {
-            console.warn("Gemini SDK 분석 실패, 플랜B 가동", error);
+            console.warn("제미나이 텍스트 분석 실패, 플랜B 가동");
             const fallbackText = targetParagraph.textContent.trim().substring(0, 50);
             optimizedPrompt = fallbackText + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, highly detailed, cel shading, official art";
         }
 
         loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 완벽한 삽화를 그리고 있습니다... (최대 5초)</div>`;
+        
+        // 플랜B: 무조건 성공하는 Flux-Anime 연결
         const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux-anime`;
 
         let retries = 1;
@@ -741,14 +719,11 @@ Output ONLY the prompt string. No explanations.`;
             const img = new Image();
             img.onload = async () => {
                 loadingDiv.remove();
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'illust-container';
+                const imgContainer = document.createElement('div'); imgContainer.className = 'illust-container';
                 imgContainer.innerHTML = `<img src="${url}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
                 targetParagraph.after(imgContainer);
-                
                 book.illustrations[idx] = url;
-                await saveBookToDB(book);
-                calculatePages();
+                await saveBookToDB(book); calculatePages();
             };
             img.onerror = () => { 
                 if (retries > 0) {
@@ -765,7 +740,7 @@ Output ONLY the prompt string. No explanations.`;
         tryLoadImage(imgUrl);
     }
 
-    window.deleteIllustration = async function(idx, btnEl, event) {
+    async function deleteIllustration(idx, btnEl, event) {
         event.stopPropagation();
         if(!confirm("이 삽화를 지우시겠습니까?")) return;
         const book = myBooks.find(b => b.id === currentBookId);
@@ -773,14 +748,14 @@ Output ONLY the prompt string. No explanations.`;
         btnEl.closest('.illust-container').remove(); calculatePages();
     }
 
-    window.toggleHighlight = async function() {
+    async function toggleHighlight() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx); const book = myBooks.find(b => b.id === currentBookId);
         if(targetParagraph.classList.contains('highlight')) { targetParagraph.classList.remove('highlight'); book.highlights = book.highlights.filter(i => i !== idx); } 
         else { targetParagraph.classList.add('highlight'); if(!book.highlights.includes(idx)) book.highlights.push(idx); }
-        await saveBookToDB(book); window.hideContextMenu();
+        await saveBookToDB(book); hideContextMenu();
     }
-    window.copyTargetText = function() { if(targetParagraph) { navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); } window.hideContextMenu(); }
+    function copyTargetText() { if(targetParagraph) { navigator.clipboard.writeText(targetParagraph.textContent).then(() => alert("텍스트가 복사되었습니다.")); } hideContextMenu(); }
 
     function initVoices() {
         const voices = speechSynthesis.getVoices(); const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
@@ -803,32 +778,32 @@ Output ONLY the prompt string. No explanations.`;
         if ('mediaSession' in navigator && book) navigator.mediaSession.metadata = new MediaMetadata({ title: book.title, artist: 'Pacemaker Reader', artwork: book.coverUrl ?[{ src: book.coverUrl, sizes: '300x300', type: 'image/jpeg' }] :[] });
     }
 
-    window.startTts = function() { 
+    function startTts() { 
         if (!paragraphsToSpeak.length) return; 
         document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
         isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
         let targetIdx = 0; for(let i=0; i<paragraphsToSpeak.length; i++) { if(Math.floor(paragraphsToSpeak[i].offsetLeft / els.viewer.clientWidth) === currentPage) { targetIdx = i; break; } }
         currentSpeakingIndex = targetIdx; ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
-    window.startTtsAtParagraph = function(targetP) { 
-        window.stopTts(); document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
+    function startTtsAtParagraph(targetP) { 
+        stopTts(); document.getElementById('silentAudio').play().catch(()=>{}); updateMediaSession();
         isTtsSpeaking = true; isTtsPaused = false; els.app.classList.add('hud-hidden'); 
         currentSpeakingIndex = paragraphsToSpeak.indexOf(targetP); ttsCurrentPage = currentPage; showTtsControls(); speakNext(); 
     }
     function showTtsControls() { els.titleTop.style.opacity = 0; els.ttsControls.classList.add('active'); els.ttsPauseBtn.innerHTML = svgPause; els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`; }
-    window.pauseResumeTts = function() {
+    function pauseResumeTts() {
         if(isTtsPaused) { speechSynthesis.resume(); isTtsPaused = false; els.ttsPauseBtn.innerHTML = svgPause; document.getElementById('silentAudio').play().catch(()=>{}); } 
         else { speechSynthesis.pause(); isTtsPaused = true; els.ttsPauseBtn.innerHTML = svgPlay; document.getElementById('silentAudio').pause(); }
     }
-    window.stopTts = function() { 
+    function stopTts() { 
         speechSynthesis.cancel(); isTtsSpeaking = false; isTtsPaused = false; isManualRestart = false; lastCharIndex = 0;
         paragraphsToSpeak.forEach(p => p.classList.remove('speaking')); els.ttsControls.classList.remove('active'); els.titleTop.style.opacity = 1; document.getElementById('silentAudio').pause();
     }
-    window.toggleTtsSpeed = function() {
+    function toggleTtsSpeed() {
         currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length; els.ttsSpeedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
         if (isTtsSpeaking && !isTtsPaused) { isManualRestart = true; speechSynthesis.cancel(); setTimeout(() => speakNext(true), 50); }
     }
-    window.syncTtsPage = function() {
+    function syncTtsPage() {
         if (currentPage !== ttsCurrentPage && isTtsSpeaking) { currentPage = ttsCurrentPage; els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'smooth' }); updateProgressUI(); }
     }
     function speakNext(isReplay = false) {
@@ -869,11 +844,11 @@ Output ONLY the prompt string. No explanations.`;
         };
 
         ttsUtterance.onend = () => { if(isManualRestart) isManualRestart = false; else { currentSpeakingIndex++; speakNext(); } };
-        ttsUtterance.onerror = () => { if(isManualRestart) isManualRestart = false; else window.stopTts(); };
+        ttsUtterance.onerror = () => { if(isManualRestart) isManualRestart = false; else stopTts(); };
         speechSynthesis.speak(ttsUtterance);
     }
 
-    window.changeFontSize = function(delta) {
+    function changeFontSize(delta) {
         const oldTotalPages = totalPages; const oldCurrentPage = currentPage;
         fontSize = Math.max(12, Math.min(30, fontSize + delta));
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
@@ -901,14 +876,13 @@ Output ONLY the prompt string. No explanations.`;
         }, 150);
     }
 
-    window.setTheme = function(theme, btnEl, isInit = false) {
+    function setTheme(theme, btnEl, isInit = false) {
         document.body.className = `theme-${theme}`; 
         document.querySelectorAll('.color-circle').forEach(el => { el.classList.remove('active'); if(el.dataset.theme === theme) el.classList.add('active'); });
         if (!isInit) { savedSettings.theme = theme; try { localStorage.setItem('pacemakerSettings', JSON.stringify(savedSettings)); } catch(e) {} }
     }
 
     window.addEventListener('resize', () => { calculatePages(); els.viewer.scrollLeft = currentPage * els.viewer.clientWidth; });
-
     if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/Reader/sw.js').catch(err => console.log('SW 등록 실패:', err)); }); }
 </script>
 </body>
