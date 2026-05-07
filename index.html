@@ -25,6 +25,7 @@
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); overflow: hidden; touch-action: none; overscroll-behavior: none; }
         #app { max-width: 500px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.05); }
 
+        /*[안드로이드 앱 전용 CSS 방어막] 모든 UI 요소 텍스트 선택 방지 */
         #view-reader, #view-bookshelf, header, #context-popup, #shelf-menu, #reader-nav-pill, #settings-sheet, .add-fab {
             -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important;
         }
@@ -139,6 +140,7 @@
         .hud-hidden header { transform: translateY(-100%); opacity: 0; pointer-events: none; }
         .hud-hidden #reader-nav-pill { transform: translate(-50%, 150%); opacity: 0; pointer-events: none !important; }
         
+        /* 설정 시트 */
         #sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 210; display: none; backdrop-filter: blur(2px);}
         #settings-sheet { 
             position: absolute; bottom: 0; left: 0; width: 100%; background: var(--ui-bg); color: var(--ui-text);
@@ -232,7 +234,7 @@
     <div id="view-reader">
         <div id="context-popup" oncontextmenu="return false;">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
-            <div class="ctx-item" onclick="generateIllustration()">🎨 삽화</div>
+            <div class="ctx-item" onclick="generateIllustration()">🍌 삽화(나노바나나)</div>
             <div class="ctx-item" onclick="toggleHighlight()">🖍️ 형광펜</div>
             <div class="ctx-item" onclick="copyTargetText()" style="border:none;">📋 복사</div>
         </div>
@@ -276,7 +278,7 @@
 </div>
 
 <script>
-    // --- [중요] 제미나이 API 키 ---
+    // --- [중요] 제미나이(나노바나나) API 키 ---
     const GEMINI_API_KEY = "AIzaSyCPUpUrKBsSiUOTjZ4rj5yzjOGA-YTurFE";
 
     let savedSettings = { fontSize: 18, theme: 'white' };
@@ -305,7 +307,7 @@
     
     const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
-    const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0];
+    const speedOptions =[1.0, 1.25, 1.75, 2.0];
     let currentSpeedIndex = 0;
 
     let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
@@ -447,7 +449,6 @@
         }; reader.readAsText(file); event.target.value = ''; 
     }
 
-    // --- 독서 뷰 렌더링 (삽화 기능 포함) ---
     function openBook(id) {
         const book = myBooks.find(b => b.id === id); if(!book) return;
         currentBookId = id; currentPage = book.currentPage || 0;
@@ -468,7 +469,6 @@
                 if(book.highlights.includes(idx)) p.classList.add('highlight');
                 els.content.appendChild(p);
 
-                // 저장된 삽화가 있다면 문단 아래에 추가
                 if(book.illustrations[idx]) {
                     const imgContainer = document.createElement('div');
                     imgContainer.className = 'illust-container';
@@ -576,7 +576,7 @@
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
-    // --- [에러 무시 플랜B 가동] 제미나이(Gemini 1.5 Flash) 기반 초고퀄리티 AI 삽화 생성 ---
+    // --- [나노바나나] 제미나이 API + Imagen 3 완벽 연동 로직 ---
     async function generateIllustration() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx);
@@ -588,7 +588,7 @@
 
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'illust-container loading';
-        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ 제미나이 AI가 문맥을 분석 중입니다...</div>`;
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ 나노바나나(Gemini)가 문맥을 분석 중입니다...</div>`;
         targetParagraph.after(loadingDiv);
 
         setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
@@ -596,23 +596,18 @@
         let optimizedPrompt = "";
         
         try {
-            // 1. 맥락을 파악하기 위해 앞뒤 문장 3개를 묶어서 제미나이에게 전송
             let contextText = "";
             for(let i = Math.max(0, idx - 2); i <= idx; i++) {
                 let pNode = els.content.querySelector(`p[data-idx="${i}"]`);
                 if(pNode) contextText += pNode.textContent + "\n";
             }
 
-            // 2. 구글 제미나이 API 호출 (Prompt Engineering)
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             const sysPrompt = `You are a prompt engineer for an anime AI image generator. 
 Novel Title: ${book.title}
 Scene Text: ${contextText}
-
-Analyze the text. If you recognize the novel (e.g., Re:Zero, Frieren, Demon Slayer), extract the English anime title and character names. Describe the scene visually.
-Write a comma-separated English prompt for an image generation API.
-Must include tags: "masterpiece, best quality, modern high quality japanese anime style, official art, light novel illustration".
-Output ONLY the prompt string. No explanations.`;
+If you recognize the novel (e.g., Re:Zero), extract the English anime title and character names. Describe the scene visually.
+Write a comma-separated English prompt. Must include: "masterpiece, best quality, high quality japanese anime style, official art, light novel illustration". Output ONLY the prompt.`;
 
             const response = await fetch(geminiUrl, {
                 method: 'POST',
@@ -624,49 +619,51 @@ Output ONLY the prompt string. No explanations.`;
                 const data = await response.json();
                 optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
             } else {
-                throw new Error("Gemini API Request Failed"); // 할당량 초과 시 고의로 에러 발생시켜 catch로 넘김
+                throw new Error("Prompt generation failed");
             }
         } catch (error) {
-            // [비법 플랜B] 제미나이가 기절해도 에러 팝업 안 띄우고 기본 텍스트로 바로 강행 돌파!
-            console.warn("제미나이 호출 실패, 플랜 B(우회)를 가동합니다.", error);
-            const fallbackText = targetParagraph.textContent.trim().substring(0, 50);
-            optimizedPrompt = fallbackText + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, highly detailed, cel shading, official art";
+            console.warn("텍스트 분석 실패, 기본 프롬프트로 진행합니다.");
+            const fallbackText = targetParagraph.textContent.trim().substring(0, 100);
+            optimizedPrompt = fallbackText + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, official art";
         }
 
-        // 제미나이 또는 플랜B 프롬프트로 무료 AI(Flux-anime)에게 그림 요청
-        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 완벽한 삽화를 그리고 있습니다... (최대 5초)</div>`;
-        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux-anime`;
-
-        let retries = 1;
-        const tryLoadImage = (url) => {
-            const img = new Image();
-            img.onload = async () => {
-                loadingDiv.remove();
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'illust-container';
-                imgContainer.innerHTML = `<img src="${url}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
-                targetParagraph.after(imgContainer);
-                
-                book.illustrations[idx] = url;
-                await saveBookToDB(book);
-                calculatePages();
-            };
-            img.onerror = () => { 
-                if (retries > 0) {
-                    retries--;
-                    loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">서버 지연... 다른 채널로 재시도 중입니다 ⏳</div>`;
-                    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux`;
-                    tryLoadImage(fallbackUrl);
-                } else {
-                    loadingDiv.remove(); 
-                    alert("그림 서버 접속자가 많아 삽화 생성에 실패했습니다. 잠시 후 다시 시도해주세요."); 
-                    calculatePages(); 
-                }
-            };
-            img.src = url;
-        };
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 나노바나나가 삽화를 그리고 있습니다... (최대 10초)</div>`;
         
-        tryLoadImage(imgUrl);
+        try {
+            const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`;
+            const imgRes = await fetch(imagenUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    instances: [{ prompt: optimizedPrompt }],
+                    parameters: { sampleCount: 1, aspectRatio: "3:4", personGeneration: "allow_all" }
+                })
+            });
+
+            if (imgRes.ok) {
+                const imgData = await imgRes.json();
+                if (imgData.predictions && imgData.predictions.length > 0) {
+                    const base64Image = imgData.predictions[0].bytesBase64Encoded;
+                    const finalImgUrl = `data:image/jpeg;base64,${base64Image}`;
+                    
+                    loadingDiv.remove();
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'illust-container';
+                    imgContainer.innerHTML = `<img src="${finalImgUrl}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
+                    targetParagraph.after(imgContainer);
+                    
+                    book.illustrations[idx] = finalImgUrl;
+                    await saveBookToDB(book);
+                    calculatePages();
+                    return;
+                }
+            }
+            throw new Error("나노바나나 이미지 생성 실패");
+        } catch(err) {
+            loadingDiv.remove(); 
+            alert("나노바나나(구글 API) 서버 접속 실패 또는 일시적 오류입니다. 잠시 후 다시 시도해주세요."); 
+            calculatePages(); 
+        }
     }
 
     async function deleteIllustration(idx, btnEl, event) {
