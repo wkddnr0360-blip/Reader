@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pacemaker Reader</title>
     
-    <!-- PWA 및 앱 아이콘 설정 -->
     <link rel="manifest" href="/Reader/manifest.json">
     <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="/Reader/icon-512.png">
-
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -103,18 +101,9 @@
         #book-content p.speaking { background-color: var(--speaking-color) !important; color: #000 !important; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.05);}
         #book-content p.highlight { background-color: var(--highlight-color) !important; }
 
-        /* 삽화 이미지 컨테이너 */
-        .illust-container {
-            width: 100%; margin: 16px 0; position: relative; text-align: center;
-            break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid;
-        }
-        .illust-img {
-            max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); object-fit: contain;
-        }
-        .illust-del-btn {
-            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff;
-            border: none; width: 32px; height: 32px; border-radius: 16px; cursor: pointer; font-size: 14px; z-index: 10;
-        }
+        .illust-container { width: 100%; margin: 16px 0; position: relative; text-align: center; break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid; }
+        .illust-img { max-width: 100%; max-height: 55vh; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); object-fit: contain; }
+        .illust-del-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; width: 32px; height: 32px; border-radius: 16px; cursor: pointer; font-size: 14px; z-index: 10; }
 
         #context-popup {
             position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); color: #333; border-radius: 16px; display: none; z-index: 150; 
@@ -157,7 +146,6 @@
         .font-btn:active { background: rgba(0,0,0,0.05); }
         .font-btn:first-child { border-right: 1px solid rgba(128,128,128,0.2); }
 
-        /* 다크모드/테마 대응 */
         .theme-white { --bg-color: #ffffff; --text-color: #333; --ui-bg: #ffffff; --ui-text: #333; }
         .theme-cream { --bg-color: #fcf9ea; --text-color: #333; --ui-bg: #fcf9ea; --ui-text: #333; }
         .theme-green { --bg-color: #e3eadc; --text-color: #333; --ui-bg: #e3eadc; --ui-text: #333; }
@@ -214,7 +202,6 @@
         <button class="add-fab" onclick="showInputScreen()">+</button>
     </div>
 
-    <!-- 개별 소설 메뉴 -->
     <div id="shelf-menu-overlay" onclick="closeShelfMenu()" oncontextmenu="return false;">
         <div id="shelf-menu" onclick="event.stopPropagation()">
             <div class="menu-item" onclick="editSelectedBook()">📝 이 책 내용/제목 수정</div>
@@ -232,7 +219,6 @@
     </div>
 
     <div id="view-reader">
-        <!-- 팝업 메뉴에 삽화 생성 추가 -->
         <div id="context-popup" oncontextmenu="return false;">
             <div class="ctx-item" onclick="startTtsFromTarget()">🔊 재생</div>
             <div class="ctx-item" onclick="generateIllustration()">🎨 삽화</div>
@@ -254,7 +240,6 @@
         </footer>
     </div>
 
-    <!-- 설정 시트 -->
     <div id="sheet-overlay" onclick="closeSettings()" oncontextmenu="return false;"></div>
     <div id="settings-sheet">
         <div class="setting-title">배경 테마</div>
@@ -279,6 +264,9 @@
 </div>
 
 <script>
+    // 제미나이 API 키 (사용자 제공)
+    const GEMINI_API_KEY = "AIzaSyCPUpUrKBsSiUOTjZ4rj5yzjOGA-YTurFE";
+
     let savedSettings = { fontSize: 18, theme: 'white' };
     try { const stored = localStorage.getItem('pacemakerSettings'); if (stored) savedSettings = JSON.parse(stored); } catch(e) {}
     let fontSize = savedSettings.fontSize || 18;
@@ -468,7 +456,6 @@
                 if(book.highlights.includes(idx)) p.classList.add('highlight');
                 els.content.appendChild(p);
 
-                // 저장된 삽화가 있다면 문단 아래에 추가
                 if(book.illustrations[idx]) {
                     const imgContainer = document.createElement('div');
                     imgContainer.className = 'illust-container';
@@ -576,7 +563,7 @@
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
-    // --- [마법의 기능] AI 삽화 생성 로직 ---
+    // --- [혁신 기능] 제미나이(Gemini 1.5 Flash) 기반 초고퀄리티 AI 삽화 생성 로직 ---
     async function generateIllustration() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx);
@@ -588,30 +575,82 @@
 
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'illust-container loading';
-        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.05); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 AI가 장면을 그리고 있습니다...</div>`;
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ 제미나이 AI가 문맥을 분석 중입니다...</div>`;
         targetParagraph.after(loadingDiv);
 
         setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
 
-        // [핵심] 일본 애니메이션 풍 (리제로, 귀멸의 칼날, 장송의 프리렌) 고퀄리티 프롬프트
-        const text = targetParagraph.textContent.trim().substring(0, 150);
-        const prompt = text + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, detailed background, similar to Re:Zero or Demon Slayer or Frieren, cel shading, official art";
-        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}`;
+        try {
+            // 1. 맥락을 파악하기 위해 앞뒤 문장 3개를 묶어서 제미나이에게 전송
+            let contextText = "";
+            for(let i = Math.max(0, idx - 2); i <= idx; i++) {
+                let pNode = els.content.querySelector(`p[data-idx="${i}"]`);
+                if(pNode) contextText += pNode.textContent + "\n";
+            }
 
-        const img = new Image();
-        img.onload = async () => {
-            loadingDiv.remove();
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'illust-container';
-            imgContainer.innerHTML = `<img src="${imgUrl}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
-            targetParagraph.after(imgContainer);
+            // 2. 구글 제미나이 API 호출 (Prompt Engineering)
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const sysPrompt = `You are a prompt engineer for an anime AI image generator. 
+Novel Title: ${book.title}
+Scene Text: ${contextText}
+
+Analyze the text. If you recognize the novel (e.g., Re:Zero, Frieren, Demon Slayer), extract the English anime title and character names. Describe the scene visually.
+Write a comma-separated English prompt for an image generation API.
+Must include tags: "masterpiece, best quality, modern high quality japanese anime style, official art, light novel illustration".
+Output ONLY the prompt string. No explanations.`;
+
+            const response = await fetch(geminiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: sysPrompt }] }] })
+            });
+            const data = await response.json();
             
-            book.illustrations[idx] = imgUrl;
-            await saveBookToDB(book);
+            // 3. 제미나이가 만들어준 "찰떡" 프롬프트 추출
+            let optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
+            
+            // UI 업데이트
+            loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 완벽한 삽화를 그리고 있습니다... (최대 5초)</div>`;
+
+            // 4. 제미나이의 프롬프트를 이용해 무료 AI(Flux-anime)로 그림 생성!
+            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux-anime`;
+
+            let retries = 1;
+            const tryLoadImage = (url) => {
+                const img = new Image();
+                img.onload = async () => {
+                    loadingDiv.remove();
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'illust-container';
+                    imgContainer.innerHTML = `<img src="${url}" class="illust-img"><button class="illust-del-btn" onclick="deleteIllustration(${idx}, this, event)">✕</button>`;
+                    targetParagraph.after(imgContainer);
+                    
+                    book.illustrations[idx] = url;
+                    await saveBookToDB(book);
+                    calculatePages();
+                };
+                img.onerror = () => { 
+                    if (retries > 0) {
+                        retries--;
+                        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">서버 지연... 다른 채널로 재시도 중입니다 ⏳</div>`;
+                        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(optimizedPrompt)}?width=512&height=768&nologo=true&seed=${Math.floor(Math.random()*10000)}&model=flux`;
+                        tryLoadImage(fallbackUrl);
+                    } else {
+                        loadingDiv.remove(); 
+                        alert("서버 접속자가 많아 삽화 생성에 실패했습니다. 잠시 후 다시 시도해주세요."); 
+                        calculatePages(); 
+                    }
+                };
+                img.src = url;
+            };
+            
+            tryLoadImage(imgUrl);
+
+        } catch (error) {
+            loadingDiv.remove();
+            alert("제미나이 AI 분석 중 오류가 발생했습니다.");
             calculatePages();
-        };
-        img.onerror = () => { loadingDiv.remove(); alert("삽화 생성에 실패했습니다."); calculatePages(); };
-        img.src = imgUrl;
+        }
     }
 
     async function deleteIllustration(idx, btnEl, event) {
