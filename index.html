@@ -76,6 +76,7 @@
         .add-fab:active { transform: translateX(200px) scale(0.95); }
         @media (max-width: 500px) { .add-fab { right: 20px; transform: none; } .add-fab:active { transform: scale(0.95); } }
 
+        /* 서재 메뉴 (꾹 누르기) */
         #shelf-menu-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);}
         #shelf-menu { background: #fff; border-radius: 20px; width: 100%; max-width: 280px; overflow: hidden; animation: popUp 0.2s ease-out; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
         @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -227,7 +228,7 @@
 
     <div id="view-input">
         <input type="text" id="book-title" placeholder="소설 제목">
-        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요."></textarea>
+        <textarea id="text-input" placeholder="소설 내용을 붙여넣으세요. (수백~수천 편도 여유롭게 저장됩니다!)"></textarea>
         <button class="start-btn" id="btn-save-read" onclick="saveAndRead()">저장하고 읽기</button>
     </div>
 
@@ -278,7 +279,7 @@
 </div>
 
 <script>
-    // --- [중요] 제미나이(나노바나나) API 키 ---
+    // --- [중요] 100% 나노바나나 전용 구글 제미나이 API 키 ---
     const GEMINI_API_KEY = "AIzaSyCPUpUrKBsSiUOTjZ4rj5yzjOGA-YTurFE";
 
     let savedSettings = { fontSize: 18, theme: 'white' };
@@ -307,7 +308,7 @@
     
     const svgPlay = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
     const svgPause = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
-    const speedOptions =[1.0, 1.25, 1.75, 2.0];
+    const speedOptions =[1.0, 1.25, 1.5, 1.75, 2.0];
     let currentSpeedIndex = 0;
 
     let isTtsSpeaking = false, isTtsPaused = false, isManualRestart = false; 
@@ -576,7 +577,7 @@
     function hideContextMenu() { els.ctxPopup.style.display = 'none'; document.querySelectorAll('p.focused').forEach(el => el.classList.remove('focused')); }
     function startTtsFromTarget() { hideContextMenu(); currentPage = Math.floor(targetParagraph.offsetLeft / els.viewer.clientWidth); startTtsAtParagraph(targetParagraph); }
     
-    // --- [나노바나나] 제미나이 API + Imagen 3 완벽 연동 로직 ---
+    // --- [100% 구글 API 직결] 나노바나나(Gemini + Imagen 3) 삽화 생성 ---
     async function generateIllustration() {
         if(!targetParagraph) return;
         const idx = parseInt(targetParagraph.dataset.idx);
@@ -588,7 +589,7 @@
 
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'illust-container loading';
-        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">✨ 나노바나나(Gemini)가 문맥을 분석 중입니다...</div>`;
+        loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🍌 나노바나나(Gemini)가 문맥을 분석 중입니다...</div>`;
         targetParagraph.after(loadingDiv);
 
         setTimeout(() => { calculatePages(); els.viewer.scrollTo({ left: currentPage * els.viewer.clientWidth, behavior: 'auto' }); }, 50);
@@ -603,11 +604,13 @@
             }
 
             const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            const sysPrompt = `You are a prompt engineer for an anime AI image generator. 
-Novel Title: ${book.title}
-Scene Text: ${contextText}
-If you recognize the novel (e.g., Re:Zero), extract the English anime title and character names. Describe the scene visually.
-Write a comma-separated English prompt. Must include: "masterpiece, best quality, high quality japanese anime style, official art, light novel illustration". Output ONLY the prompt.`;
+            const sysPrompt = `You are an expert anime AI prompt engineer.
+Title: ${book.title}
+Text: ${contextText}
+Extract characters or scene context from the text. 
+Create a short, comma-separated English prompt for an image generation API.
+Must include tags: "masterpiece, best quality, high quality japanese anime style, official art, light novel illustration".
+Output ONLY the prompt string.`;
 
             const response = await fetch(geminiUrl, {
                 method: 'POST',
@@ -619,24 +622,25 @@ Write a comma-separated English prompt. Must include: "masterpiece, best quality
                 const data = await response.json();
                 optimizedPrompt = data.candidates[0].content.parts[0].text.trim();
             } else {
-                throw new Error("Prompt generation failed");
+                throw new Error("Prompt Error");
             }
         } catch (error) {
-            console.warn("텍스트 분석 실패, 기본 프롬프트로 진행합니다.");
-            const fallbackText = targetParagraph.textContent.trim().substring(0, 100);
-            optimizedPrompt = fallbackText + ", masterpiece, best quality, modern high quality japanese anime style, light novel illustration, official art";
+            const fallbackText = targetParagraph.textContent.trim().substring(0, 50);
+            optimizedPrompt = fallbackText + ", masterpiece, best quality, japanese anime style, official art";
         }
 
         loadingDiv.innerHTML = `<div style="padding:40px; background:rgba(0,0,0,0.03); border-radius:12px; color:#888; font-size:14px; font-weight:bold;">🎨 나노바나나가 삽화를 그리고 있습니다... (최대 10초)</div>`;
         
         try {
+            // [핵심] 외부 무료 서버 없이 구글 Imagen 3 API로 다이렉트 연결
+            // 무료 API 키 권한 에러를 막기 위해 personGeneration 파라미터는 제외함
             const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`;
             const imgRes = await fetch(imagenUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     instances: [{ prompt: optimizedPrompt }],
-                    parameters: { sampleCount: 1, aspectRatio: "3:4", personGeneration: "allow_all" }
+                    parameters: { sampleCount: 1, aspectRatio: "3:4" }
                 })
             });
 
@@ -658,10 +662,11 @@ Write a comma-separated English prompt. Must include: "masterpiece, best quality
                     return;
                 }
             }
-            throw new Error("나노바나나 이미지 생성 실패");
+            throw new Error("Imagen generation failed");
         } catch(err) {
             loadingDiv.remove(); 
-            alert("나노바나나(구글 API) 서버 접속 실패 또는 일시적 오류입니다. 잠시 후 다시 시도해주세요."); 
+            // 무료 키 권한 문제 또는 폭력/선정성 검열에 걸렸음을 직관적으로 안내
+            alert("나노바나나(구글 API) 서버 접속 실패 또는 검열 오류입니다.\n원인: 잔인/선정적 묘사 필터링 또는 트래픽 초과\n\n다른 문단에서 다시 시도해주세요."); 
             calculatePages(); 
         }
     }
